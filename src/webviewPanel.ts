@@ -24,7 +24,10 @@ export class PhraseManagerPanel {
             column || vscode.ViewColumn.One,
             {
                 enableScripts: true,
-                localResourceRoots: [extensionUri]
+                localResourceRoots: [
+                    vscode.Uri.joinPath(extensionUri, 'media'),
+                    extensionUri
+                ]
             }
         );
 
@@ -103,134 +106,153 @@ export class PhraseManagerPanel {
         this._panel.webview.html = this.getHtmlForWebview(this._panel.webview, phrases);
     }
 
+    private escapeHtml(str: string): string {
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&#39;');
+    }
+
+    private escapeJs(str: string): string {
+        return str.replace(/\\/g, '\\\\')
+                  .replace(/'/g, "\\'")
+                  .replace(/"/g, '\\"')
+                  .replace(/\n/g, '\\n')
+                  .replace(/\r/g, '\\r');
+    }
+
     private getHtmlForWebview(webview: vscode.Webview, phrases: SmartPhrase[]) {
         const nonce = getNonce();
+        
+        // Get the resource URIs
+        const mediaUri = vscode.Uri.joinPath(this._panel.webview.options.localResourceRoots![0]);
+        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaUri, 'webview.css'));
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaUri, 'webview.js'));
 
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
                 <title>Smart Phrases Manager</title>
-                <style>
-                    body {
-                        font-family: var(--vscode-font-family);
-                        padding: 20px;
-                        color: var(--vscode-foreground);
-                        background-color: var(--vscode-editor-background);
-                    }
-                    .container {
-                        max-width: 800px;
-                        margin: 0 auto;
-                    }
-                    h1 {
-                        color: var(--vscode-foreground);
-                        border-bottom: 1px solid var(--vscode-panel-border);
-                        padding-bottom: 10px;
-                    }
-                    .add-form {
-                        margin-bottom: 30px;
-                        padding: 20px;
-                        background-color: var(--vscode-editor-inactiveSelectionBackground);
-                        border-radius: 5px;
-                    }
-                    .form-group {
-                        margin-bottom: 15px;
-                    }
-                    label {
-                        display: block;
-                        margin-bottom: 5px;
-                        font-weight: bold;
-                    }
-                    input, select {
-                        width: 100%;
-                        padding: 8px;
-                        background-color: var(--vscode-input-background);
-                        color: var(--vscode-input-foreground);
-                        border: 1px solid var(--vscode-input-border);
-                        border-radius: 3px;
-                    }
-                    button {
-                        padding: 8px 16px;
-                        background-color: var(--vscode-button-background);
-                        color: var(--vscode-button-foreground);
-                        border: none;
-                        border-radius: 3px;
-                        cursor: pointer;
-                        margin-right: 10px;
-                    }
-                    button:hover {
-                        background-color: var(--vscode-button-hoverBackground);
-                    }
-                    .phrase-list {
-                        margin-top: 20px;
-                    }
-                    .phrase-item {
-                        padding: 15px;
-                        margin-bottom: 10px;
-                        background-color: var(--vscode-editor-inactiveSelectionBackground);
-                        border-radius: 5px;
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                    }
-                    .phrase-content {
-                        flex-grow: 1;
-                    }
-                    .phrase-key {
-                        font-weight: bold;
-                        color: var(--vscode-symbolIcon-keywordForeground);
-                    }
-                    .phrase-replacement {
-                        margin-top: 5px;
-                        color: var(--vscode-descriptionForeground);
-                    }
-                    .phrase-category {
-                        font-size: 0.9em;
-                        color: var(--vscode-textPreformat-foreground);
-                        margin-left: 10px;
-                    }
-                    .phrase-actions {
-                        display: flex;
-                        gap: 10px;
-                    }
-                    .search-box {
-                        width: 100%;
-                        padding: 10px;
-                        margin-bottom: 20px;
-                        font-size: 16px;
-                    }
-                    .stats {
-                        padding: 10px;
-                        background-color: var(--vscode-editor-inactiveSelectionBackground);
-                        border-radius: 5px;
-                        margin-bottom: 20px;
-                        text-align: center;
-                    }
-                </style>
+                <link href="${styleUri}" rel="stylesheet">
             </head>
             <body>
                 <div class="container">
-                    <h1>Smart Phrases Manager</h1>
+                    <h1>
+                        Smart Phrases Manager
+                        <div class="header-actions">
+                            <button class="btn-secondary btn-icon" onclick="showImportExportModal()">📥 Import/Export</button>
+                        </div>
+                    </h1>
                     
                     <div class="stats">
-                        Total Phrases: <strong>${phrases.length}</strong>
+                        <div class="stat-card">
+                            <div class="stat-number">${phrases.length}</div>
+                            <div class="stat-label">Total Phrases</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${phrases.filter(p => p.category).length}</div>
+                            <div class="stat-label">Categorized</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${[...new Set(phrases.map(p => p.category).filter(Boolean))].length}</div>
+                            <div class="stat-label">Categories</div>
+                        </div>
                     </div>
 
                     <div class="add-form">
                         <h2>Add New Phrase</h2>
-                        <div class="form-group">
-                            <label for="phrase">Phrase (letters, numbers, _, - only):</label>
-                            <input type="text" id="phrase" placeholder="e.g., addr" pattern="[a-zA-Z0-9_-]+" maxlength="50">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="phrase">Phrase</label>
+                                <input type="text" id="phrase" placeholder="e.g., addr" pattern="[a-zA-Z0-9_-]+" maxlength="50">
+                            </div>
+                            <div class="form-group">
+                                <label for="replacement">Replacement</label>
+                                <input type="text" id="replacement" placeholder="e.g., 123 Main Street" maxlength="500">
+                            </div>
+                            <div class="form-group">
+                                <label for="category">Category</label>
+                                <select id="category">
+                                    <option value="">None</option>
+                                    <option value="Common">Common</option>
+                                    <option value="Business">Business</option>
+                                    <option value="Personal">Personal</option>
+                                    <option value="Code">Code</option>
+                                    <option value="Internet">Internet</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button onclick="addPhrase()">➕ Add Phrase</button>
+                    </div>
+
+                    <div class="search-filter-container">
+                        <input type="text" class="search-box" id="search" placeholder="🔍 Search phrases..." onkeyup="filterPhrases()">
+                        <select id="categoryFilter" onchange="filterPhrases()">
+                            <option value="">All Categories</option>
+                            <option value="Common">Common</option>
+                            <option value="Business">Business</option>
+                            <option value="Personal">Personal</option>
+                            <option value="Code">Code</option>
+                            <option value="Internet">Internet</option>
+                            <option value="uncategorized">Uncategorized</option>
+                        </select>
+                        <button class="btn-secondary" onclick="toggleSelectAll()">
+                            <span id="selectAllText">Select All</span>
+                        </button>
+                    </div>
+
+                    <div class="phrase-list" id="phraseList">
+                        ${phrases.length === 0 ? `
+                            <div class="empty-state">
+                                <h2>No phrases yet</h2>
+                                <p>Add your first smart phrase to get started!</p>
+                            </div>
+                        ` : phrases.map(p => `
+                            <div class="phrase-item" data-phrase="${this.escapeHtml(p.phrase)}" data-category="${this.escapeHtml(p.category || '')}">
+                                <input type="checkbox" class="phrase-checkbox" onchange="updateBulkActions()">
+                                <div class="phrase-content">
+                                    <div class="phrase-header">
+                                        <span class="phrase-key">${this.escapeHtml(p.phrase)}</span>
+                                        ${p.category ? `<span class="phrase-category">${this.escapeHtml(p.category)}</span>` : ''}
+                                    </div>
+                                    <div class="phrase-replacement">${this.escapeHtml(p.replacement)}</div>
+                                </div>
+                                <div class="phrase-actions">
+                                    <button class="btn-icon" onclick="editPhraseModal('${this.escapeJs(p.phrase)}', '${this.escapeJs(p.replacement)}', '${this.escapeJs(p.category || '')}')">✏️</button>
+                                    <button class="btn-icon btn-danger" onclick="deletePhrase('${this.escapeJs(p.phrase)}')">🗑️</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="bulk-actions" id="bulkActions">
+                    <span id="selectedCount">0 selected</span>
+                    <button class="btn-danger" onclick="deleteSelected()">Delete Selected</button>
+                    <button class="btn-secondary" onclick="deselectAll()">Cancel</button>
+                </div>
+
+                <div class="modal" id="editModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Edit Phrase</h2>
+                            <button class="close-button" onclick="closeEditModal()">×</button>
                         </div>
                         <div class="form-group">
-                            <label for="replacement">Replacement:</label>
-                            <input type="text" id="replacement" placeholder="e.g., 123 Main Street" maxlength="500">
+                            <label for="editPhrase">Phrase</label>
+                            <input type="text" id="editPhrase" pattern="[a-zA-Z0-9_-]+" maxlength="50">
                         </div>
                         <div class="form-group">
-                            <label for="category">Category (optional):</label>
-                            <select id="category">
+                            <label for="editReplacement">Replacement</label>
+                            <textarea id="editReplacement" rows="4" maxlength="500"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editCategory">Category</label>
+                            <select id="editCategory">
                                 <option value="">None</option>
                                 <option value="Common">Common</option>
                                 <option value="Business">Business</option>
@@ -239,104 +261,31 @@ export class PhraseManagerPanel {
                                 <option value="Internet">Internet</option>
                             </select>
                         </div>
-                        <button onclick="addPhrase()">Add Phrase</button>
-                    </div>
-
-                    <input type="text" class="search-box" id="search" placeholder="Search phrases..." onkeyup="filterPhrases()">
-
-                    <div class="phrase-list" id="phraseList">
-                        ${phrases.map(p => `
-                            <div class="phrase-item" data-phrase="${p.phrase}">
-                                <div class="phrase-content">
-                                    <div>
-                                        <span class="phrase-key">${p.phrase}</span>
-                                        ${p.category ? `<span class="phrase-category">[${p.category}]</span>` : ''}
-                                    </div>
-                                    <div class="phrase-replacement">${p.replacement}</div>
-                                </div>
-                                <div class="phrase-actions">
-                                    <button onclick="editPhrase('${p.phrase}', '${p.replacement.replace(/'/g, "\\'")}', '${p.category || ''}')">Edit</button>
-                                    <button onclick="deletePhrase('${p.phrase}')">Delete</button>
-                                </div>
-                            </div>
-                        `).join('')}
+                        <button onclick="saveEdit()">Save Changes</button>
+                        <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
                     </div>
                 </div>
 
-                <script nonce="${nonce}">
-                    const vscode = acquireVsCodeApi();
+                <div class="modal" id="importExportModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Import/Export Phrases</h2>
+                            <button class="close-button" onclick="closeImportExportModal()">×</button>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <h3>Export</h3>
+                            <p>Download your phrases as a JSON file</p>
+                            <button onclick="exportPhrases()">📥 Export All Phrases</button>
+                        </div>
+                        <div>
+                            <h3>Import</h3>
+                            <p>Upload a JSON file to import phrases</p>
+                            <input type="file" id="importFile" accept=".json" onchange="handleImport(event)">
+                        </div>
+                    </div>
+                </div>
 
-                    function addPhrase() {
-                        const phrase = document.getElementById('phrase').value.trim();
-                        const replacement = document.getElementById('replacement').value.trim();
-                        const category = document.getElementById('category').value;
-
-                        if (!phrase || !replacement) {
-                            alert('Please fill in both phrase and replacement');
-                            return;
-                        }
-
-                        if (!/^[a-zA-Z0-9_-]+$/.test(phrase)) {
-                            alert('Phrase can only contain letters, numbers, underscores, and hyphens');
-                            return;
-                        }
-
-                        vscode.postMessage({
-                            command: 'addPhrase',
-                            phrase: { phrase, replacement, category: category || undefined }
-                        });
-
-                        // Clear form
-                        document.getElementById('phrase').value = '';
-                        document.getElementById('replacement').value = '';
-                        document.getElementById('category').value = '';
-                    }
-
-                    function editPhrase(phrase, replacement, category) {
-                        const newPhrase = prompt('Edit phrase:', phrase);
-                        if (!newPhrase) return;
-
-                        const newReplacement = prompt('Edit replacement:', replacement);
-                        if (!newReplacement) return;
-
-                        const newCategory = prompt('Edit category (optional):', category) || undefined;
-
-                        if (!/^[a-zA-Z0-9_-]+$/.test(newPhrase)) {
-                            alert('Phrase can only contain letters, numbers, underscores, and hyphens');
-                            return;
-                        }
-
-                        vscode.postMessage({
-                            command: 'editPhrase',
-                            oldPhrase: phrase,
-                            newPhrase: { phrase: newPhrase, replacement: newReplacement, category: newCategory }
-                        });
-                    }
-
-                    function deletePhrase(phrase) {
-                        if (confirm(\`Delete phrase "\${phrase}"?\`)) {
-                            vscode.postMessage({
-                                command: 'deletePhrase',
-                                phrase: phrase
-                            });
-                        }
-                    }
-
-                    function filterPhrases() {
-                        const search = document.getElementById('search').value.toLowerCase();
-                        const items = document.querySelectorAll('.phrase-item');
-                        
-                        items.forEach(item => {
-                            const phrase = item.getAttribute('data-phrase').toLowerCase();
-                            const content = item.textContent.toLowerCase();
-                            if (phrase.includes(search) || content.includes(search)) {
-                                item.style.display = 'flex';
-                            } else {
-                                item.style.display = 'none';
-                            }
-                        });
-                    }
-                </script>
+                <script src="${scriptUri}" nonce="${nonce}"></script>
             </body>
             </html>`;
     }

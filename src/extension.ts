@@ -7,20 +7,25 @@ import * as os from 'os';
 const triggerChars = [' ', '\t', '\n'];
 const maxTriggerLength = 50;
 const maxPhraseLength = 1000;
-const jsonFilename = 'smart-phrase.json';
+const jsonFilename = 'smart-phrases.json';
 
 // Interfaces
 interface TriggerPhrase {
     trigger: string;
     phrase: string;
+    triggerOn?: {
+        space?: boolean;
+        enter?: boolean;
+        tab?: boolean;
+    };
 }
 
 interface TriggersData {
-    [key: string]: string;
+    [key: string]: string | TriggerPhrase;
 }
 
 // Global state
-let triggers: Map<string, string> = new Map();
+let triggers: Map<string, TriggerPhrase> = new Map();
 let panel: vscode.WebviewPanel | undefined = undefined;
 let outputChannel: vscode.OutputChannel;
 let lastTextChangeTime = 0;
@@ -34,9 +39,6 @@ export function activate(context: vscode.ExtensionContext): void {
     try {
         // Load triggers from JSON file
         loadTriggersFromFile();
-        
-        // Show the simple panel immediately when extension activates
-        showSimplePanel();
         
         // Register commands
         const openPanelCommand = vscode.commands.registerCommand('smartPhrases.openPanel', () => {
@@ -89,14 +91,14 @@ function handleTextChange(event: vscode.TextDocumentChangeEvent): void {
         
         // Check if user typed a trigger character
         if (triggerChars.includes(changedText)) {
-            checkAndReplace(activeEditor, change.range.start);
+            checkAndReplace(activeEditor, change.range.start, changedText);
         }
     } catch (error) {
         handleError('Error in text change handler', error);
     }
 }
 
-function checkAndReplace(editor: vscode.TextEditor, position: vscode.Position): void {
+function checkAndReplace(editor: vscode.TextEditor, position: vscode.Position, triggerChar: string): void {
     try {
         const document = editor.document;
         const lineText = document.lineAt(position.line).text;
@@ -107,7 +109,19 @@ function checkAndReplace(editor: vscode.TextEditor, position: vscode.Position): 
         const lastWord = words[words.length - 1];
         
         if (lastWord && triggers.has(lastWord.toLowerCase())) {
-            const replacement = triggers.get(lastWord.toLowerCase())!;
+            const triggerPhrase = triggers.get(lastWord.toLowerCase())!;
+            
+            // Check if this trigger character is enabled for this phrase
+            const triggerOn = triggerPhrase.triggerOn || { space: true, enter: true, tab: true }; // Default all enabled
+            
+            let shouldReplace = false;
+            if (triggerChar === ' ' && triggerOn.space) shouldReplace = true;
+            if (triggerChar === '\n' && triggerOn.enter) shouldReplace = true;
+            if (triggerChar === '\t' && triggerOn.tab) shouldReplace = true;
+            
+            if (!shouldReplace) {
+                return;
+            }
             
             // Calculate the range to replace (the trigger word)
             const startPos = new vscode.Position(position.line, position.character - lastWord.length);
@@ -116,10 +130,10 @@ function checkAndReplace(editor: vscode.TextEditor, position: vscode.Position): 
             
             // Replace the trigger with the phrase
             editor.edit(editBuilder => {
-                editBuilder.replace(range, replacement);
+                editBuilder.replace(range, triggerPhrase.phrase);
             }, { undoStopBefore: false, undoStopAfter: false });
             
-            outputChannel.appendLine(`Replaced "${lastWord}" with "${replacement}"`);
+            outputChannel.appendLine(`Replaced "${lastWord}" with "${triggerPhrase.phrase}"`);
         }
     } catch (error) {
         handleError('Error during text replacement', error);
@@ -130,10 +144,15 @@ function checkAndReplace(editor: vscode.TextEditor, position: vscode.Position): 
 function getJsonFilePath(): string {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (workspaceFolder) {
-        return path.join(workspaceFolder.uri.fsPath, jsonFilename);
+        const vscodeFolder = path.join(workspaceFolder.uri.fsPath, '.vscode');
+        // Ensure .vscode directory exists
+        if (!fs.existsSync(vscodeFolder)) {
+            fs.mkdirSync(vscodeFolder, { recursive: true });
+        }
+        return path.join(vscodeFolder, jsonFilename);
     }
     // Fallback to user's home directory
-    return path.join(os.homedir(), jsonFilename);
+    return path.join(os.homedir(), '.vscode', jsonFilename);
 }
 
 function loadTriggersFromFile(): void {
@@ -176,14 +195,39 @@ function loadTriggersFromFile(): void {
                 entries.length = 1000;
             }
             
-            for (const [trigger, phrase] of entries) {
-                if (isValidTrigger(trigger) && isValidPhrase(phrase)) {
-                    triggers.set(trigger.toLowerCase(), phrase);
+            for (const [trigger, value] of entries) {
+                // Handle both old format (string) and new format (TriggerPhrase object)
+                let triggerPhrase: TriggerPhrase;
+                
+                if (typeof value === 'string') {
+                    // Old format - convert to new format with all triggers enabled
+                    triggerPhrase = {
+                        trigger: trigger,
+                        phrase: value,
+                        triggerOn: { space: true, enter: true, tab: true }
+                    };
+                } else if (typeof value === 'object' && value !== null && 'phrase' in value) {
+                    // New format
+                    triggerPhrase = value as TriggerPhrase;
+                    // Ensure triggerOn exists with defaults
+                    if (!triggerPhrase.triggerOn) {
+                        triggerPhrase.triggerOn = { space: true, enter: true, tab: true };
+                    }
+                } else {
+                    skippedCount++;
+                    if (skippedCount <= 10) {
+                        outputChannel.appendLine(`Skipped invalid trigger: "${trigger}"`);
+                    }
+                    continue;
+                }
+                
+                if (isValidTrigger(trigger) && isValidPhrase(triggerPhrase.phrase)) {
+                    triggers.set(trigger.toLowerCase(), triggerPhrase);
                     loadedCount++;
                 } else {
                     skippedCount++;
-                    if (skippedCount <= 10) { // Limit log spam
-                        outputChannel.appendLine(`Skipped invalid trigger: "${trigger}" -> "${phrase}"`);
+                    if (skippedCount <= 10) {
+                        outputChannel.appendLine(`Skipped invalid trigger: "${trigger}" -> "${triggerPhrase.phrase}"`);
                     }
                 }
             }
@@ -205,17 +249,35 @@ function loadTriggersFromFile(): void {
 function createDefaultTriggersFile(filePath: string): void {
     try {
         const defaultTriggers: TriggersData = {
-            "test": "This is a test replacement!",
-            "addr": "123 Main Street, City, State 12345",
-            "email": "your.email@example.com",
-            "sig": "Best regards,\\nYour Name"
+            "test": {
+                trigger: "test",
+                phrase: "This is a test replacement!",
+                triggerOn: { space: true, enter: true, tab: true }
+            },
+            "addr": {
+                trigger: "addr",
+                phrase: "123 Main Street, City, State 12345",
+                triggerOn: { space: true, enter: true, tab: true }
+            },
+            "email": {
+                trigger: "email",
+                phrase: "your.email@example.com",
+                triggerOn: { space: true, enter: true, tab: true }
+            },
+            "sig": {
+                trigger: "sig",
+                phrase: "Best regards,\\nYour Name",
+                triggerOn: { space: true, enter: true, tab: true }
+            }
         };
         
         fs.writeFileSync(filePath, JSON.stringify(defaultTriggers, null, 2), 'utf8');
         
         triggers.clear();
-        for (const [trigger, phrase] of Object.entries(defaultTriggers)) {
-            triggers.set(trigger.toLowerCase(), phrase);
+        for (const [trigger, value] of Object.entries(defaultTriggers)) {
+            if (typeof value === 'object' && 'phrase' in value) {
+                triggers.set(trigger.toLowerCase(), value as TriggerPhrase);
+            }
         }
         
         outputChannel.appendLine(`Created default ${jsonFilename} at ${filePath}`);
@@ -230,8 +292,8 @@ function saveTriggersToFile(): void {
     
     try {
         const data: TriggersData = {};
-        for (const [trigger, phrase] of triggers) {
-            data[trigger] = phrase;
+        for (const [trigger, triggerPhrase] of triggers) {
+            data[trigger] = triggerPhrase;
         }
         
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
@@ -275,15 +337,19 @@ function handleError(message: string, error: unknown): void {
 // UI functions
 function showSimplePanel(): void {
     try {
+        outputChannel.appendLine('showSimplePanel called');
+        
         const columnToShowIn = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
 
         if (panel) {
+            outputChannel.appendLine('Panel already exists, revealing it');
             panel.reveal(columnToShowIn);
             return;
         }
 
+        outputChannel.appendLine('Creating new webview panel');
         panel = vscode.window.createWebviewPanel(
             'smartPhrases',
             'Smart Phrases - Add Triggers & Phrases',
@@ -295,14 +361,15 @@ function showSimplePanel(): void {
             }
         );
 
-        panel.webview.html = getWebviewContent();
+        outputChannel.appendLine('Setting webview HTML content');
+        panel.webview.html = getWebviewContent(panel.webview);
 
         panel.webview.onDidReceiveMessage(
             message => {
                 try {
                     switch (message.command) {
                         case 'addTrigger':
-                            addTriggerPhrase(message.trigger, message.phrase);
+                            addTriggerPhrase(message.trigger, message.phrase, message.triggerOn);
                             break;
                         case 'showTriggers':
                             showSavedTriggers();
@@ -314,7 +381,7 @@ function showSimplePanel(): void {
                             deleteTrigger(message.trigger);
                             break;
                         case 'editTrigger':
-                            editTrigger(message.oldTrigger, message.newTrigger, message.newPhrase);
+                            editTrigger(message.oldTrigger, message.newTrigger, message.newPhrase, message.triggerOn);
                             break;
                         case 'getAllTriggers':
                             sendAllTriggersToWebview();
@@ -338,10 +405,11 @@ function showSimplePanel(): void {
         outputChannel.appendLine('Smart Phrases panel opened');
     } catch (error) {
         handleError('Error opening panel', error);
+        vscode.window.showErrorMessage('Failed to open Smart Phrases panel. Check the output channel for details.');
     }
 }
 
-function addTriggerPhrase(trigger: string, phrase: string): void {
+function addTriggerPhrase(trigger: string, phrase: string, triggerOn?: { space?: boolean; enter?: boolean; tab?: boolean }): void {
     try {
         // Sanitize inputs
         const cleanTrigger = sanitizeInput(trigger);
@@ -362,7 +430,13 @@ function addTriggerPhrase(trigger: string, phrase: string): void {
             return;
         }
         
-        triggers.set(cleanTrigger.toLowerCase(), cleanPhrase);
+        const triggerPhrase: TriggerPhrase = {
+            trigger: cleanTrigger,
+            phrase: cleanPhrase,
+            triggerOn: triggerOn || { space: true, enter: true, tab: true }
+        };
+        
+        triggers.set(cleanTrigger.toLowerCase(), triggerPhrase);
         saveTriggersToFile();
         
         vscode.window.showInformationMessage(`Added trigger: "${cleanTrigger}" → "${cleanPhrase}"`);
@@ -373,6 +447,7 @@ function addTriggerPhrase(trigger: string, phrase: string): void {
                 command: 'triggerAdded', 
                 trigger: cleanTrigger, 
                 phrase: cleanPhrase,
+                triggerOn: triggerPhrase.triggerOn,
                 total: triggers.size
             });
         }
@@ -419,7 +494,7 @@ function deleteTrigger(trigger: string): void {
     }
 }
 
-function editTrigger(oldTrigger: string, newTrigger: string, newPhrase: string): void {
+function editTrigger(oldTrigger: string, newTrigger: string, newPhrase: string, triggerOn?: { space?: boolean; enter?: boolean; tab?: boolean }): void {
     try {
         // Sanitize inputs
         const cleanNewTrigger = sanitizeInput(newTrigger);
@@ -447,7 +522,13 @@ function editTrigger(oldTrigger: string, newTrigger: string, newPhrase: string):
         }
         
         // Add new trigger
-        triggers.set(cleanNewTrigger.toLowerCase(), cleanNewPhrase);
+        const triggerPhrase: TriggerPhrase = {
+            trigger: cleanNewTrigger,
+            phrase: cleanNewPhrase,
+            triggerOn: triggerOn || { space: true, enter: true, tab: true }
+        };
+        
+        triggers.set(cleanNewTrigger.toLowerCase(), triggerPhrase);
         saveTriggersToFile();
         
         vscode.window.showInformationMessage(`Updated trigger: "${oldTrigger}" → "${cleanNewTrigger}"`);
@@ -459,6 +540,7 @@ function editTrigger(oldTrigger: string, newTrigger: string, newPhrase: string):
                 oldTrigger: oldTrigger,
                 newTrigger: cleanNewTrigger,
                 newPhrase: cleanNewPhrase,
+                triggerOn: triggerPhrase.triggerOn,
                 total: triggers.size
             });
         }
@@ -470,9 +552,10 @@ function editTrigger(oldTrigger: string, newTrigger: string, newPhrase: string):
 function sendAllTriggersToWebview(): void {
     try {
         if (panel) {
-            const triggersArray = Array.from(triggers.entries()).map(([trigger, phrase]) => ({
+            const triggersArray = Array.from(triggers.entries()).map(([trigger, triggerPhrase]) => ({
                 trigger: trigger,
-                phrase: phrase
+                phrase: triggerPhrase.phrase,
+                triggerOn: triggerPhrase.triggerOn
             }));
             
             panel.webview.postMessage({
@@ -493,10 +576,10 @@ function showSavedTriggers(): void {
             return;
         }
         
-        const items = Array.from(triggers.entries()).map(([trigger, phrase]) => ({
+        const items = Array.from(triggers.entries()).map(([trigger, triggerPhrase]) => ({
             label: trigger,
-            description: phrase.length > 50 ? phrase.substring(0, 47) + '...' : phrase,
-            detail: phrase
+            description: triggerPhrase.phrase.length > 50 ? triggerPhrase.phrase.substring(0, 47) + '...' : triggerPhrase.phrase,
+            detail: triggerPhrase.phrase
         }));
         
         vscode.window.showQuickPick(items, {
@@ -506,16 +589,59 @@ function showSavedTriggers(): void {
         handleError('Error showing saved triggers', error);
     }
 }
-function getWebviewContent(): string {
+function getWebviewContent(webview: vscode.Webview): string {
     const nonce = getNonce();
-    const cspSource = panel?.webview.cspSource || 'vscode-resource:';
+    const cspSource = webview.cspSource;
+    
+    // Simple test content first
+    const testMode = true; // Change to true to test
+    if (testMode) {
+        return `<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body {
+                    background-color: #1e1e1e;
+                    color: white;
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Test - Smart Phrases Panel</h1>
+            <form id="testForm">
+                <input type="text" id="trigger" placeholder="Trigger">
+                <input type="text" id="phrase" placeholder="Phrase">
+                <button type="submit">Add</button>
+            </form>
+            <div id="output"></div>
+            <script nonce="${nonce}">
+                const vscode = acquireVsCodeApi();
+                document.getElementById('testForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const trigger = document.getElementById('trigger').value;
+                    const phrase = document.getElementById('phrase').value;
+                    document.getElementById('output').innerHTML = 'Added: ' + trigger + ' -> ' + phrase;
+                    vscode.postMessage({
+                        command: 'addTrigger',
+                        trigger: trigger,
+                        phrase: phrase
+                    });
+                });
+            </script>
+        </body>
+        </html>`;
+    }
     
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} https:; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} https:; style-src ${cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
     <title>Smart Phrases</title>
     <style>
         /* Apple-inspired CSS Variables */
@@ -592,6 +718,7 @@ function getWebviewContent(): string {
             padding: var(--spacing-xl);
             color: var(--label-primary);
             background: var(--system-background);
+            background-color: var(--vscode-editor-background, #1e1e1e); /* Fallback color */
             line-height: 1.47; /* Apple's preferred line height */
             font-size: var(--text-body);
             -webkit-font-smoothing: antialiased;
@@ -894,6 +1021,24 @@ function getWebviewContent(): string {
                     <textarea id="phrase" placeholder="123 Main Street, Anytown, ST 12345" required maxlength="1000"></textarea>
                 </div>
                 
+                <div class="form-group">
+                    <label>Trigger on:</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="triggerSpace" checked>
+                            <span>Space</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="triggerEnter" checked>
+                            <span>Enter</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="triggerTab" checked>
+                            <span>Tab</span>
+                        </label>
+                    </div>
+                </div>
+                
                 <div class="button-group">
                     <button type="submit" class="primary-btn">Add Smart Phrase</button>
                     <button type="button" id="showTriggers" class="secondary-btn">View All Phrases</button>
@@ -922,6 +1067,23 @@ function getWebviewContent(): string {
                     <div class="form-group">
                         <label for="editPhrase">Replacement phrase</label>
                         <textarea id="editPhrase" required maxlength="1000"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Trigger on:</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="editTriggerSpace" checked>
+                                <span>Space</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="editTriggerEnter" checked>
+                                <span>Enter</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="editTriggerTab" checked>
+                                <span>Tab</span>
+                            </label>
+                        </div>
                     </div>
                     <div class="button-group modal-buttons">
                         <button type="submit" class="primary-btn">Save Changes</button>
@@ -996,6 +1158,13 @@ function getWebviewContent(): string {
             font-size: var(--text-subhead);
             line-height: 1.5;
             word-break: break-word;
+        }
+        
+        .trigger-info {
+            color: var(--label-tertiary);
+            font-size: var(--text-footnote);
+            margin-top: var(--spacing-xs);
+            font-style: italic;
         }
         
         .trigger-actions {
@@ -1102,65 +1271,155 @@ function getWebviewContent(): string {
         .empty-state-text {
             font-size: var(--text-callout);
         }
+        
+        /* Checkbox styles */
+        .checkbox-group {
+            display: flex;
+            gap: var(--spacing-lg);
+            margin-top: var(--spacing-sm);
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: var(--text-callout);
+        }
+        
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-right: var(--spacing-sm);
+            cursor: pointer;
+        }
+        
+        .checkbox-label span {
+            user-select: none;
+        }
     </style>
 
     <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         
-        document.getElementById('triggerForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+        // Add error handler
+        window.addEventListener('error', function(e) {
+            console.error('Script error:', e.error);
+            alert('Error: ' + e.error.message);
+        });
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, setting up form handlers');
             
-            const trigger = document.getElementById('trigger').value.trim();
-            const phrase = document.getElementById('phrase').value.trim();
-            
-            if (!trigger || !phrase) {
+            const triggerForm = document.getElementById('triggerForm');
+            if (!triggerForm) {
+                console.error('triggerForm not found!');
                 return;
             }
             
-            vscode.postMessage({
-                command: 'addTrigger',
-                trigger: trigger,
-                phrase: phrase
+            triggerForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log('Form submitted');
+                
+                try {
+                    const trigger = document.getElementById('trigger').value.trim();
+                    const phrase = document.getElementById('phrase').value.trim();
+                    const triggerSpace = document.getElementById('triggerSpace').checked;
+                    const triggerEnter = document.getElementById('triggerEnter').checked;
+                    const triggerTab = document.getElementById('triggerTab').checked;
+                    
+                    if (!trigger || !phrase) {
+                        return;
+                    }
+                    
+                    // Ensure at least one trigger is selected
+                    if (!triggerSpace && !triggerEnter && !triggerTab) {
+                        alert('Please select at least one trigger character');
+                        return;
+                    }
+                    
+                    console.log('Sending message to extension:', { trigger, phrase });
+                    
+                    vscode.postMessage({
+                        command: 'addTrigger',
+                        trigger: trigger,
+                        phrase: phrase,
+                        triggerOn: {
+                            space: triggerSpace,
+                            enter: triggerEnter,
+                            tab: triggerTab
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error in form submission:', error);
+                    alert('Error submitting form: ' + error.message);
+                }
             });
-        });
-        
-        document.getElementById('showTriggers').addEventListener('click', function() {
-            // Instead of QuickPick, request all triggers and show in UI
-            vscode.postMessage({
-                command: 'getAllTriggers'
+            
+            document.getElementById('showTriggers').addEventListener('click', function() {
+                // Instead of QuickPick, request all triggers and show in UI
+                vscode.postMessage({
+                    command: 'getAllTriggers'
+                });
             });
-        });
-        
-        document.getElementById('editForm').addEventListener('submit', function(e) {
-            e.preventDefault();
             
-            const originalTrigger = document.getElementById('originalTrigger').value;
-            const newTrigger = document.getElementById('editTrigger').value.trim();
-            const newPhrase = document.getElementById('editPhrase').value.trim();
-            
-            if (!newTrigger || !newPhrase) {
-                return;
+            const editForm = document.getElementById('editForm');
+            if (editForm) {
+                editForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const originalTrigger = document.getElementById('originalTrigger').value;
+                    const newTrigger = document.getElementById('editTrigger').value.trim();
+                    const newPhrase = document.getElementById('editPhrase').value.trim();
+                    const triggerSpace = document.getElementById('editTriggerSpace').checked;
+                    const triggerEnter = document.getElementById('editTriggerEnter').checked;
+                    const triggerTab = document.getElementById('editTriggerTab').checked;
+                    
+                    if (!newTrigger || !newPhrase) {
+                        return;
+                    }
+                    
+                    // Ensure at least one trigger is selected
+                    if (!triggerSpace && !triggerEnter && !triggerTab) {
+                        alert('Please select at least one trigger character');
+                        return;
+                    }
+                    
+                    vscode.postMessage({
+                        command: 'editTrigger',
+                        oldTrigger: originalTrigger,
+                        newTrigger: newTrigger,
+                        newPhrase: newPhrase,
+                        triggerOn: {
+                            space: triggerSpace,
+                            enter: triggerEnter,
+                            tab: triggerTab
+                        }
+                    });
+                    
+                    closeEditModal();
+                });
             }
             
-            vscode.postMessage({
-                command: 'editTrigger',
-                oldTrigger: originalTrigger,
-                newTrigger: newTrigger,
-                newPhrase: newPhrase
-            });
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function() {
+                    closeEditModal();
+                });
+            }
             
-            closeEditModal();
-        });
+        }); // End of DOMContentLoaded
         
-        document.getElementById('cancelEditBtn').addEventListener('click', function() {
-            closeEditModal();
-        });
-        
-        // Global functions for edit/delete
-        window.editTrigger = function(trigger, phrase) {
+        // Global functions for edit/delete (defined outside DOMContentLoaded)
+        window.editTrigger = function(trigger, phrase, triggerOn) {
             document.getElementById('originalTrigger').value = trigger;
             document.getElementById('editTrigger').value = trigger;
             document.getElementById('editPhrase').value = phrase;
+            
+            // Set checkbox states (default to all checked if not specified)
+            document.getElementById('editTriggerSpace').checked = triggerOn?.space !== false;
+            document.getElementById('editTriggerEnter').checked = triggerOn?.enter !== false;
+            document.getElementById('editTriggerTab').checked = triggerOn?.tab !== false;
+            
             document.getElementById('editModal').style.display = 'flex';
             document.getElementById('editTrigger').focus();
         };
@@ -1193,14 +1452,27 @@ function getWebviewContent(): string {
                 return;
             }
             
-            listContainer.innerHTML = triggers.map(({trigger, phrase}) => \`
+            listContainer.innerHTML = triggers.map(({trigger, phrase, triggerOn}) => {
+                // Display which triggers are active
+                const activeTriggers = [];
+                if (triggerOn?.space !== false) activeTriggers.push('Space');
+                if (triggerOn?.enter !== false) activeTriggers.push('Enter');
+                if (triggerOn?.tab !== false) activeTriggers.push('Tab');
+                const triggerDisplay = activeTriggers.length > 0 ? activeTriggers.join(', ') : 'All';
+                
+                return \`
                 <div class="trigger-item" data-trigger="\${escapeHtml(trigger)}">
                     <div class="trigger-content">
                         <div class="trigger-keyword">\${escapeHtml(trigger)}</div>
                         <div class="trigger-phrase">\${escapeHtml(phrase)}</div>
+                        <div class="trigger-info">Triggers on: \${triggerDisplay}</div>
                     </div>
                     <div class="trigger-actions">
-                        <button class="icon-btn edit-btn" data-trigger="\${escapeHtml(trigger)}" data-phrase="\${escapeHtml(phrase)}" title="Edit">
+                        <button class="icon-btn edit-btn" 
+                            data-trigger="\${escapeHtml(trigger)}" 
+                            data-phrase="\${escapeHtml(phrase)}"
+                            data-trigger-on='\${JSON.stringify(triggerOn || {space: true, enter: true, tab: true})}'
+                            title="Edit">
                             ✏️
                         </button>
                         <button class="icon-btn delete delete-btn" data-trigger="\${escapeHtml(trigger)}" title="Delete">
@@ -1208,14 +1480,15 @@ function getWebviewContent(): string {
                         </button>
                     </div>
                 </div>
-            \`).join('');
+            \`;}).join('');
             
             // Add event listeners to buttons
             listContainer.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const trigger = this.getAttribute('data-trigger');
                     const phrase = this.getAttribute('data-phrase');
-                    editTrigger(trigger, phrase);
+                    const triggerOn = JSON.parse(this.getAttribute('data-trigger-on') || '{}');
+                    editTrigger(trigger, phrase, triggerOn);
                 });
             });
             
@@ -1227,7 +1500,7 @@ function getWebviewContent(): string {
             });
             
             listSection.style.display = 'block';
-        }
+        } // End of renderTriggersList
         
         // Helper function to escape HTML and prevent XSS
         function escapeHtml(unsafe) {
