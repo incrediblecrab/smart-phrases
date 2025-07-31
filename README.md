@@ -2,7 +2,6 @@
 
 Smart Phrases is a powerful VS Code extension that automatically expands text shortcuts as you type, helping you save time and increase productivity with a beautiful, Apple-inspired interface.
 
-![Smart Phrases Logo](Group-21.png)
 
 ## ⚡ Features
 
