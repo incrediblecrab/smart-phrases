@@ -10,13 +10,7 @@
     "url": "https://mlot.ai"
   },
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/maxs-lab-of-things/smart-phrases.git"
-  },
-  "bugs": {
-    "url": "https://github.com/maxs-lab-of-things/smart-phrases/issues"
-  },
+  "private": true,
   "engines": {
     "vscode": "^1.74.0"
   },
