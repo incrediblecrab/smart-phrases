@@ -1,7 +1,7 @@
 {
   "name": "smart-phrases",
   "displayName": "Smart Phrases",
-  "description": "Auto-replace text phrases as you type",
+  "description": "Auto-complete smart phrases with trigger words for efficient typing",
   "version": "0.0.1",
   "publisher": "maxs-lab-of-things",
   "homepage": "https://mlot.ai",
@@ -10,32 +10,43 @@
     "url": "https://mlot.ai"
   },
   "license": "MIT",
-  "private": true,
   "engines": {
     "vscode": "^1.74.0"
   },
-  "categories": ["Other"],
+  "categories": ["Other", "Snippets"],
   "icon": "Group-21.png",
-  "keywords": [
-    "text replacement",
-    "auto replace",
-    "snippets",
-    "productivity",
-    "shortcuts",
-    "abbreviations",
-    "text expander",
-    "typing"
+  "activationEvents": [
+    "onStartupFinished"
   ],
-  "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "smartPhrases.openPanel",
-        "title": "Open Smart Phrases Panel",
+        "command": "smartPhrases.managePhrases",
+        "title": "Manage Smart Phrases",
         "category": "Smart Phrases"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Smart Phrases",
+      "properties": {
+        "smartPhrases.triggerOnSpace": {
+          "type": "boolean",
+          "default": true,
+          "description": "Trigger phrase expansion when pressing space"
+        },
+        "smartPhrases.triggerOnTab": {
+          "type": "boolean",
+          "default": true,
+          "description": "Trigger phrase expansion when pressing tab"
+        },
+        "smartPhrases.triggerOnEnter": {
+          "type": "boolean",
+          "default": false,
+          "description": "Trigger phrase expansion when pressing enter"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -51,11 +62,7 @@
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
     "eslint": "^8.28.0",
-    "typescript": "^4.9.5",
-    "@vscode/test-electron": "^2.2.0",
-    "@types/glob": "^8.0.0",
-    "@types/mocha": "^10.0.1",
-    "glob": "^8.0.3",
-    "mocha": "^10.1.0"
+    "typescript": "^4.9.3",
+    "@vscode/test-electron": "^2.2.0"
   }
 }

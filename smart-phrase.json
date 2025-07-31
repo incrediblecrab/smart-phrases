@@ -1,6 +1,22 @@
-{
-  "test": "This is a test replacement!",
-  "addr": "123 Main Street, City, State 12345",
-  "email": "your.email@example.com",
-  "sig": "Best regards,\\nYour Name"
-}
+[
+  {
+    "trigger": "addr",
+    "phrase": "123 Main Street, San Francisco, CA 94105"
+  },
+  {
+    "trigger": "sig",
+    "phrase": "Best regards,\nMax Marquardt\nmax@mlot.ai"
+  },
+  {
+    "trigger": "lorem",
+    "phrase": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+  },
+  {
+    "trigger": "ph",
+    "phrase": "+1 (555) 123-4567"
+  },
+  {
+    "trigger": "gh",
+    "phrase": "https://github.com/"
+  }
+]

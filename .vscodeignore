@@ -8,6 +8,5 @@ vsc-extension-quickstart.md
 **/.eslintrc.json
 **/*.map
 **/*.ts
-node_modules/**
-.git/**
-*.vsix
+node_modules
+todo.md

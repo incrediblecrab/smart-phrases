@@ -1,131 +1,70 @@
-# Smart Phrases - VS Code Extension
+# Smart Phrases
 
-Smart Phrases is a powerful VS Code extension that automatically expands text shortcuts as you type, helping you save time and increase productivity with a beautiful, Apple-inspired interface.
+Auto-complete smart phrases with trigger words for efficient typing in VS Code.
 
+## Features
 
-## ⚡ Features
+- **Trigger Word Expansion**: Type a trigger word and expand it to a full phrase
+- **Multiple Trigger Options**: Choose between space, tab, or enter to trigger expansions
+- **Easy Management**: Add, edit, and delete phrases through a clean UI
+- **JSON File Editing**: Direct access to edit the phrases JSON file
+- **Auto-completion Suggestions**: See available phrases as you type
 
-- **Auto-expansion**: Type a trigger + space/tab/enter to instantly expand into full phrases
-- **Beautiful UI**: Clean, Apple-inspired design with light/dark theme support
-- **Easy Management**: Add, edit, and delete phrases through an intuitive panel
-- **JSON Storage**: Your phrases are stored in a simple `smart-phrase.json` file
-- **Secure**: Input validation and sanitization to ensure safety
-- **Fast**: Optimized performance with minimal impact on your typing
+## Usage
 
-## 🚀 Getting Started
+### Adding Phrases
 
-1. Install the extension
-2. The Smart Phrases panel opens automatically when VS Code starts
-3. Add your first phrase by filling in the form
-4. Start typing your trigger followed by space, tab, or enter to see it expand!
+1. Open Command Palette (`Cmd+Shift+P` on macOS, `Ctrl+Shift+P` on Windows/Linux)
+2. Run `Smart Phrases: Manage Smart Phrases`
+3. Click "Add Phrase" 
+4. Enter your trigger word (e.g., `addr`)
+5. Enter the full phrase (e.g., `123 Main Street, City, State 12345`)
+6. Click Save
 
-## 📝 Usage
+### Using Phrases
 
-### Adding a Phrase
-
-1. Open the Smart Phrases panel (Command Palette → "Open Smart Phrases Panel")
-2. Enter a **trigger keyword** (e.g., "addr")
-3. Enter the **replacement phrase** (e.g., "123 Main Street, Anytown, ST 12345")
-4. Click "Add Smart Phrase"
+Simply type your trigger word followed by your configured trigger key:
+- **Space**: Type `addr ` → `123 Main Street, City, State 12345 `
+- **Tab**: Type `addr[Tab]` → `123 Main Street, City, State 12345`
+- **Enter**: Type `addr[Enter]` → `123 Main Street, City, State 12345`
 
 ### Managing Phrases
 
-- Click **"View All Phrases"** to see your saved phrases
-- Click the **✏️ Edit** button to modify a phrase
-- Click the **🗑️ Delete** button to remove a phrase
+- **Edit**: Click the edit icon next to any phrase to modify it
+- **Delete**: Click the delete icon to remove a phrase
+- **Edit JSON**: Click "Edit JSON" to directly modify the phrases file
 
-### Default Phrases
+## Configuration
 
-The extension comes with helpful defaults:
-- `test` → `This is a test replacement!`
-- `addr` → `123 Main Street, City, State 12345`
-- `email` → `your.email@example.com`
-- `sig` → `Best regards,\nYour Name`
+Configure trigger keys in VS Code settings:
 
-## ⚙️ Storage
+- `smartPhrases.triggerOnSpace`: Trigger expansion with space (default: `true`)
+- `smartPhrases.triggerOnTab`: Trigger expansion with tab (default: `true`)
+- `smartPhrases.triggerOnEnter`: Trigger expansion with enter (default: `false`)
 
-Your phrases are stored in:
-- **Workspace**: `.vscode/smart-phrase.json` (if in a workspace)
-- **Global**: `~/smart-phrase.json` (if not in a workspace)
+## Examples
 
-### File Format
+Common use cases for smart phrases:
 
-```json
-{
-  "addr": "123 Main Street, City, State 12345",
-  "email": "john.doe@example.com",
-  "sig": "Best regards,\\nJohn Doe",
-  "meeting": "I'd like to schedule a meeting to discuss..."
-}
-```
+- **Addresses**: `addr` → `123 Main Street, City, State 12345`
+- **Email Signatures**: `sig` → `Best regards,\nJohn Doe\njohn@example.com`
+- **Code Snippets**: `lorem` → `Lorem ipsum dolor sit amet...`
+- **URLs**: `gh` → `https://github.com/`
+- **Phone Numbers**: `ph` → `+1 (555) 123-4567`
 
-## 🔒 Security
+## Storage
 
-- **Trigger validation**: Only alphanumeric characters, hyphens, and underscores
-- **Length limits**: Triggers max 50 chars, phrases max 1000 chars
-- **XSS protection**: All content is properly escaped
-- **File size limit**: Max 1MB for the triggers file
-- **Trigger count limit**: Max 1000 triggers
+Phrases are stored in a JSON file in your VS Code global storage directory. You can access this file directly through the "Edit JSON" button in the phrase manager.
 
-## 💡 Examples
+## Requirements
 
-### Personal Information
-- `myaddr` → Your full address
-- `myphone` → Your phone number
-- `myemail` → Your email address
+- VS Code 1.74.0 or higher
 
-### Common Phrases
-- `ty` → `Thank you`
-- `np` → `No problem`
-- `brb` → `Be right back`
-- `omw` → `On my way`
+## License
 
-### Professional
-- `mtg` → `meeting`
-- `followup` → `I wanted to follow up on our previous conversation...`
-- `regards` → `Best regards,\n[Your Name]`
+MIT License - see LICENSE file for details
 
-### Development
-- `lorem` → `Lorem ipsum dolor sit amet...`
-- `todo` → `// TODO: `
-- `fixme` → `// FIXME: `
+## Author
 
-## 🎨 Design
-
-The extension features an Apple-inspired design with:
-- Clean, minimal interface
-- Light gray cards (#f9f9f9) in light theme
-- Dark gray cards (#3a3a3c) in dark theme
-- Apple blue (#007AFF) accent color
-- Smooth animations and transitions
-- Proper typography hierarchy
-
-## ⚠️ Limitations
-
-- Triggers must be alphanumeric (plus `-` and `_`)
-- Case-insensitive matching (triggers are stored lowercase)
-- Maximum 1000 triggers
-- Maximum file size 1MB
-- Works only in file-based documents (not in output panels, etc.)
-
-## 🐛 Troubleshooting
-
-### Phrases not expanding?
-1. Make sure you're typing a space, tab, or enter after the trigger
-2. Check that your trigger contains only valid characters
-3. Verify the extension is active (panel should be visible)
-
-### Can't see your phrases?
-1. Click "View All Phrases" button
-2. Check the Output panel for any errors (View → Output → Smart Phrases)
-
-## 👤 Author
-
-**Max Marquardt**  
-Website: [https://mlot.ai](https://mlot.ai)
-
----
-
-**Note**: This is a private extension. For support or questions, please contact the author directly.
-
-Made with ❤️ and ☕ in VS Code
+Max Marquardt  
+[https://mlot.ai](https://mlot.ai)

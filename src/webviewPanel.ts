@@ -1,42 +1,49 @@
 import * as vscode from 'vscode';
-import { SmartPhrase } from './phraseProvider';
 import { PhraseStorage } from './phraseStorage';
 
 export class PhraseManagerPanel {
     public static currentPanel: PhraseManagerPanel | undefined;
-    private readonly _panel: vscode.WebviewPanel;
-    private _disposables: vscode.Disposable[] = [];
+    public static readonly viewType = 'smartPhrases.phraseManager';
 
-    public static createOrShow(extensionUri: vscode.Uri, storage: PhraseStorage) {
+    private readonly _panel: vscode.WebviewPanel;
+    private readonly _extensionUri: vscode.Uri;
+    private _disposables: vscode.Disposable[] = [];
+    private phraseStorage: PhraseStorage;
+
+    public static createOrShow(extensionUri: vscode.Uri, phraseStorage: PhraseStorage) {
         const column = vscode.window.activeTextEditor
             ? vscode.window.activeTextEditor.viewColumn
             : undefined;
 
         if (PhraseManagerPanel.currentPanel) {
             PhraseManagerPanel.currentPanel._panel.reveal(column);
-            PhraseManagerPanel.currentPanel.update(storage);
             return;
         }
 
         const panel = vscode.window.createWebviewPanel(
-            'phraseManager',
+            PhraseManagerPanel.viewType,
             'Smart Phrases Manager',
             column || vscode.ViewColumn.One,
             {
                 enableScripts: true,
-                localResourceRoots: [
-                    vscode.Uri.joinPath(extensionUri, 'media'),
-                    extensionUri
-                ]
+                retainContextWhenHidden: true,
+                localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'media')]
             }
         );
 
-        PhraseManagerPanel.currentPanel = new PhraseManagerPanel(panel, extensionUri, storage);
+        PhraseManagerPanel.currentPanel = new PhraseManagerPanel(panel, extensionUri, phraseStorage);
     }
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, private storage: PhraseStorage) {
+    public static revive(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, phraseStorage: PhraseStorage) {
+        PhraseManagerPanel.currentPanel = new PhraseManagerPanel(panel, extensionUri, phraseStorage);
+    }
+
+    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, phraseStorage: PhraseStorage) {
         this._panel = panel;
-        this.update(storage);
+        this._extensionUri = extensionUri;
+        this.phraseStorage = phraseStorage;
+
+        this._update();
 
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
@@ -44,17 +51,20 @@ export class PhraseManagerPanel {
             message => {
                 switch (message.command) {
                     case 'addPhrase':
-                        this.addPhrase(message.phrase);
-                        break;
-                    case 'editPhrase':
-                        this.editPhrase(message.oldPhrase, message.newPhrase);
-                        break;
+                        this.handleAddPhrase(message.trigger, message.phrase);
+                        return;
+                    case 'updatePhrase':
+                        this.handleUpdatePhrase(message.oldTrigger, message.newTrigger, message.phrase);
+                        return;
                     case 'deletePhrase':
-                        this.deletePhrase(message.phrase);
-                        break;
-                    case 'refresh':
-                        this.update(this.storage);
-                        break;
+                        this.handleDeletePhrase(message.trigger);
+                        return;
+                    case 'openJsonFile':
+                        this.handleOpenJsonFile();
+                        return;
+                    case 'refreshData':
+                        this._update();
+                        return;
                 }
             },
             null,
@@ -62,37 +72,48 @@ export class PhraseManagerPanel {
         );
     }
 
-    private async addPhrase(phrase: SmartPhrase) {
-        const success = await this.storage.addPhrase(phrase);
-        if (success) {
-            vscode.window.showInformationMessage(`Added phrase: ${phrase.phrase}`);
-            this.update(this.storage);
+    private handleAddPhrase(trigger: string, phrase: string) {
+        if (!trigger || !phrase) {
+            vscode.window.showErrorMessage('Trigger and phrase cannot be empty');
+            return;
+        }
+
+        if (this.phraseStorage.addPhrase(trigger, phrase)) {
+            vscode.window.showInformationMessage(`Added phrase: ${trigger} → ${phrase}`);
+            this._update();
         } else {
-            vscode.window.showErrorMessage('Failed to add phrase. Please check the format.');
+            vscode.window.showErrorMessage(`Trigger "${trigger}" already exists`);
         }
     }
 
-    private async editPhrase(oldPhrase: string, newPhrase: SmartPhrase) {
-        const success = await this.storage.updatePhrase(oldPhrase, newPhrase);
-        if (success) {
-            vscode.window.showInformationMessage(`Updated phrase: ${newPhrase.phrase}`);
-            this.update(this.storage);
+    private handleUpdatePhrase(oldTrigger: string, newTrigger: string, phrase: string) {
+        if (!newTrigger || !phrase) {
+            vscode.window.showErrorMessage('Trigger and phrase cannot be empty');
+            return;
+        }
+
+        if (this.phraseStorage.updatePhrase(oldTrigger, newTrigger, phrase)) {
+            vscode.window.showInformationMessage(`Updated phrase: ${newTrigger} → ${phrase}`);
+            this._update();
         } else {
-            vscode.window.showErrorMessage('Failed to update phrase. Please check the format.');
+            vscode.window.showErrorMessage(`Trigger "${newTrigger}" already exists`);
         }
     }
 
-    private async deletePhrase(phrase: string) {
-        const success = await this.storage.deletePhrase(phrase);
-        if (success) {
-            vscode.window.showInformationMessage(`Deleted phrase: ${phrase}`);
-            this.update(this.storage);
+    private handleDeletePhrase(trigger: string) {
+        if (this.phraseStorage.deletePhrase(trigger)) {
+            vscode.window.showInformationMessage(`Deleted phrase: ${trigger}`);
+            this._update();
         }
+    }
+
+    private handleOpenJsonFile() {
+        const jsonPath = this.phraseStorage.getPhrasesFilePath();
+        vscode.window.showTextDocument(vscode.Uri.file(jsonPath));
     }
 
     public dispose() {
         PhraseManagerPanel.currentPanel = undefined;
-        this._panel.dispose();
         while (this._disposables.length) {
             const x = this._disposables.pop();
             if (x) {
@@ -101,191 +122,96 @@ export class PhraseManagerPanel {
         }
     }
 
-    private update(storage: PhraseStorage) {
-        const phrases = storage.getAllPhrases();
-        this._panel.webview.html = this.getHtmlForWebview(this._panel.webview, phrases);
+    private _update() {
+        const webview = this._panel.webview;
+        this._panel.title = 'Smart Phrases Manager';
+        this._panel.webview.html = this._getHtmlForWebview(webview);
     }
 
-    private escapeHtml(str: string): string {
-        return str.replace(/&/g, '&amp;')
-                  .replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;')
-                  .replace(/"/g, '&quot;')
-                  .replace(/'/g, '&#39;');
-    }
-
-    private escapeJs(str: string): string {
-        return str.replace(/\\/g, '\\\\')
-                  .replace(/'/g, "\\'")
-                  .replace(/"/g, '\\"')
-                  .replace(/\n/g, '\\n')
-                  .replace(/\r/g, '\\r');
-    }
-
-    private getHtmlForWebview(webview: vscode.Webview, phrases: SmartPhrase[]) {
+    private _getHtmlForWebview(webview: vscode.Webview) {
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'webview.js'));
+        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'webview.css'));
+        const phrases = this.phraseStorage.getAllPhrases();
         const nonce = getNonce();
-        
-        // Get the resource URIs
-        const mediaUri = vscode.Uri.joinPath(this._panel.webview.options.localResourceRoots![0]);
-        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaUri, 'webview.css'));
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(mediaUri, 'webview.js'));
 
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
-                <title>Smart Phrases Manager</title>
+                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
                 <link href="${styleUri}" rel="stylesheet">
+                <title>Smart Phrases Manager</title>
             </head>
             <body>
                 <div class="container">
-                    <h1>
-                        Smart Phrases Manager
-                        <div class="header-actions">
-                            <button class="btn-secondary btn-icon" onclick="showImportExportModal()">📥 Import/Export</button>
-                        </div>
-                    </h1>
-                    
-                    <div class="stats">
-                        <div class="stat-card">
-                            <div class="stat-number">${phrases.length}</div>
-                            <div class="stat-label">Total Phrases</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">${phrases.filter(p => p.category).length}</div>
-                            <div class="stat-label">Categorized</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">${[...new Set(phrases.map(p => p.category).filter(Boolean))].length}</div>
-                            <div class="stat-label">Categories</div>
-                        </div>
-                    </div>
+                    <header>
+                        <h1>Smart Phrases</h1>
+                        <p class="subtitle">Manage your trigger words and phrases</p>
+                    </header>
 
-                    <div class="add-form">
-                        <h2>Add New Phrase</h2>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="phrase">Phrase</label>
-                                <input type="text" id="phrase" placeholder="e.g., addr" pattern="[a-zA-Z0-9_-]+" maxlength="50">
-                            </div>
-                            <div class="form-group">
-                                <label for="replacement">Replacement</label>
-                                <input type="text" id="replacement" placeholder="e.g., 123 Main Street" maxlength="500">
-                            </div>
-                            <div class="form-group">
-                                <label for="category">Category</label>
-                                <select id="category">
-                                    <option value="">None</option>
-                                    <option value="Common">Common</option>
-                                    <option value="Business">Business</option>
-                                    <option value="Personal">Personal</option>
-                                    <option value="Code">Code</option>
-                                    <option value="Internet">Internet</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button onclick="addPhrase()">➕ Add Phrase</button>
-                    </div>
-
-                    <div class="search-filter-container">
-                        <input type="text" class="search-box" id="search" placeholder="🔍 Search phrases..." onkeyup="filterPhrases()">
-                        <select id="categoryFilter" onchange="filterPhrases()">
-                            <option value="">All Categories</option>
-                            <option value="Common">Common</option>
-                            <option value="Business">Business</option>
-                            <option value="Personal">Personal</option>
-                            <option value="Code">Code</option>
-                            <option value="Internet">Internet</option>
-                            <option value="uncategorized">Uncategorized</option>
-                        </select>
-                        <button class="btn-secondary" onclick="toggleSelectAll()">
-                            <span id="selectAllText">Select All</span>
+                    <div class="action-bar">
+                        <button class="button button-primary" id="addPhraseBtn">
+                            <span class="icon">+</span> Add Phrase
+                        </button>
+                        <button class="button button-secondary" id="openJsonBtn">
+                            <span class="icon">📄</span> Edit JSON
+                        </button>
+                        <button class="button button-secondary" id="refreshBtn">
+                            <span class="icon">↻</span> Refresh
                         </button>
                     </div>
 
-                    <div class="phrase-list" id="phraseList">
-                        ${phrases.length === 0 ? `
-                            <div class="empty-state">
-                                <h2>No phrases yet</h2>
-                                <p>Add your first smart phrase to get started!</p>
-                            </div>
-                        ` : phrases.map(p => `
-                            <div class="phrase-item" data-phrase="${this.escapeHtml(p.phrase)}" data-category="${this.escapeHtml(p.category || '')}">
-                                <input type="checkbox" class="phrase-checkbox" onchange="updateBulkActions()">
-                                <div class="phrase-content">
-                                    <div class="phrase-header">
-                                        <span class="phrase-key">${this.escapeHtml(p.phrase)}</span>
-                                        ${p.category ? `<span class="phrase-category">${this.escapeHtml(p.category)}</span>` : ''}
+                    <div class="add-phrase-form" id="addPhraseForm" style="display: none;">
+                        <h3>Add New Phrase</h3>
+                        <div class="form-group">
+                            <label for="newTrigger">Trigger</label>
+                            <input type="text" id="newTrigger" placeholder="e.g., addr" />
+                        </div>
+                        <div class="form-group">
+                            <label for="newPhrase">Phrase</label>
+                            <textarea id="newPhrase" rows="3" placeholder="e.g., 123 Main Street, City, State 12345"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button class="button button-primary" id="saveNewBtn">Save</button>
+                            <button class="button button-secondary" id="cancelNewBtn">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div class="phrases-list">
+                        ${phrases.length === 0 
+                            ? '<div class="empty-state">No phrases yet. Click "Add Phrase" to get started!</div>'
+                            : phrases.map(p => `
+                                <div class="phrase-item" data-trigger="${p.trigger}">
+                                    <div class="phrase-content">
+                                        <div class="phrase-trigger">${p.trigger}</div>
+                                        <div class="phrase-text">${p.phrase}</div>
                                     </div>
-                                    <div class="phrase-replacement">${this.escapeHtml(p.replacement)}</div>
+                                    <div class="phrase-actions">
+                                        <button class="icon-button edit-btn" title="Edit">✏️</button>
+                                        <button class="icon-button delete-btn" title="Delete">🗑️</button>
+                                    </div>
+                                    <div class="edit-form" style="display: none;">
+                                        <div class="form-group">
+                                            <label>Trigger</label>
+                                            <input type="text" class="edit-trigger" value="${p.trigger}" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Phrase</label>
+                                            <textarea class="edit-phrase" rows="3">${p.phrase}</textarea>
+                                        </div>
+                                        <div class="form-actions">
+                                            <button class="button button-primary save-edit-btn">Save</button>
+                                            <button class="button button-secondary cancel-edit-btn">Cancel</button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="phrase-actions">
-                                    <button class="btn-icon" onclick="editPhraseModal('${this.escapeJs(p.phrase)}', '${this.escapeJs(p.replacement)}', '${this.escapeJs(p.category || '')}')">✏️</button>
-                                    <button class="btn-icon btn-danger" onclick="deletePhrase('${this.escapeJs(p.phrase)}')">🗑️</button>
-                                </div>
-                            </div>
-                        `).join('')}
+                            `).join('')
+                        }
                     </div>
                 </div>
 
-                <div class="bulk-actions" id="bulkActions">
-                    <span id="selectedCount">0 selected</span>
-                    <button class="btn-danger" onclick="deleteSelected()">Delete Selected</button>
-                    <button class="btn-secondary" onclick="deselectAll()">Cancel</button>
-                </div>
-
-                <div class="modal" id="editModal">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h2>Edit Phrase</h2>
-                            <button class="close-button" onclick="closeEditModal()">×</button>
-                        </div>
-                        <div class="form-group">
-                            <label for="editPhrase">Phrase</label>
-                            <input type="text" id="editPhrase" pattern="[a-zA-Z0-9_-]+" maxlength="50">
-                        </div>
-                        <div class="form-group">
-                            <label for="editReplacement">Replacement</label>
-                            <textarea id="editReplacement" rows="4" maxlength="500"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="editCategory">Category</label>
-                            <select id="editCategory">
-                                <option value="">None</option>
-                                <option value="Common">Common</option>
-                                <option value="Business">Business</option>
-                                <option value="Personal">Personal</option>
-                                <option value="Code">Code</option>
-                                <option value="Internet">Internet</option>
-                            </select>
-                        </div>
-                        <button onclick="saveEdit()">Save Changes</button>
-                        <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
-                    </div>
-                </div>
-
-                <div class="modal" id="importExportModal">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h2>Import/Export Phrases</h2>
-                            <button class="close-button" onclick="closeImportExportModal()">×</button>
-                        </div>
-                        <div style="margin-bottom: 20px;">
-                            <h3>Export</h3>
-                            <p>Download your phrases as a JSON file</p>
-                            <button onclick="exportPhrases()">📥 Export All Phrases</button>
-                        </div>
-                        <div>
-                            <h3>Import</h3>
-                            <p>Upload a JSON file to import phrases</p>
-                            <input type="file" id="importFile" accept=".json" onchange="handleImport(event)">
-                        </div>
-                    </div>
-                </div>
-
-                <script src="${scriptUri}" nonce="${nonce}"></script>
+                <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>
             </html>`;
     }

@@ -1,179 +1,119 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { SmartPhrase } from './phraseProvider';
+
+export interface Phrase {
+    trigger: string;
+    phrase: string;
+}
 
 export class PhraseStorage {
-    private static readonly storageKey = 'smartPhrases';
-    private phrases: Map<string, SmartPhrase> = new Map();
-    private storageFilePath: string | undefined;
-    
+    private phrases: Map<string, string> = new Map();
+    private phrasesFilePath: string;
+    private watcher: vscode.FileSystemWatcher | undefined;
+
     constructor(private context: vscode.ExtensionContext) {
-        this.initializeStorage();
+        this.phrasesFilePath = path.join(context.globalStorageUri.fsPath, 'smart-phrases.json');
+        this.ensureStorageDirectory();
         this.loadPhrases();
+        this.watchPhrasesFile();
     }
 
-    private initializeStorage(): void {
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (workspaceFolders && workspaceFolders.length > 0) {
-            const vscodeFolder = path.join(workspaceFolders[0].uri.fsPath, '.vscode');
-            
-            // Ensure .vscode directory exists
-            if (!fs.existsSync(vscodeFolder)) {
-                fs.mkdirSync(vscodeFolder, { recursive: true });
-            }
-            
-            this.storageFilePath = path.join(vscodeFolder, 'smart-phrases.json');
+    private ensureStorageDirectory() {
+        const dir = path.dirname(this.phrasesFilePath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
         }
     }
 
-    private loadPhrases(): void {
-        this.phrases.clear();
-        
-        if (this.storageFilePath && fs.existsSync(this.storageFilePath)) {
-            try {
-                const data = fs.readFileSync(this.storageFilePath, 'utf8');
-                const stored = JSON.parse(data) as SmartPhrase[];
-                
-                if (Array.isArray(stored) && stored.length > 0) {
-                    stored.forEach(phrase => {
-                        if (this.validatePhrase(phrase)) {
-                            this.phrases.set(phrase.phrase.toLowerCase(), phrase);
-                        }
-                    });
-                } else {
-                    this.loadDefaultPhrases();
-                }
-            } catch (error) {
-                console.error('Error loading phrases from file:', error);
-                this.loadDefaultPhrases();
-            }
-        } else {
-            // Fallback to global state or load defaults
-            const stored = this.context.globalState.get<SmartPhrase[]>(PhraseStorage.storageKey, []);
+    private watchPhrasesFile() {
+        if (fs.existsSync(this.phrasesFilePath)) {
+            this.watcher = vscode.workspace.createFileSystemWatcher(
+                new vscode.RelativePattern(vscode.Uri.file(this.phrasesFilePath), '*')
+            );
             
-            if (stored.length === 0) {
-                this.loadDefaultPhrases();
-            } else {
-                stored.forEach(phrase => {
-                    if (this.validatePhrase(phrase)) {
-                        this.phrases.set(phrase.phrase.toLowerCase(), phrase);
-                    }
+            this.watcher.onDidChange(() => {
+                this.loadPhrases();
+            });
+        }
+    }
+
+    private loadPhrases() {
+        try {
+            if (fs.existsSync(this.phrasesFilePath)) {
+                const data = fs.readFileSync(this.phrasesFilePath, 'utf8');
+                const phrasesArray: Phrase[] = JSON.parse(data);
+                this.phrases.clear();
+                phrasesArray.forEach(item => {
+                    this.phrases.set(item.trigger, item.phrase);
                 });
-                // Migrate from global state to file
+            } else {
                 this.savePhrases();
             }
+        } catch (error) {
+            console.error('Error loading phrases:', error);
+            this.phrases.clear();
         }
     }
 
-    private loadDefaultPhrases(): void {
-        const defaults: SmartPhrase[] = [
-            { phrase: 'brb', replacement: 'be right back', category: 'Common' },
-            { phrase: 'ty', replacement: 'thank you', category: 'Common' },
-            { phrase: 'np', replacement: 'no problem', category: 'Common' },
-            { phrase: 'btw', replacement: 'by the way', category: 'Common' },
-            { phrase: 'lol', replacement: 'laugh out loud', category: 'Internet' },
-            { phrase: 'omg', replacement: 'oh my god', category: 'Internet' },
-            { phrase: 'fyi', replacement: 'for your information', category: 'Business' },
-            { phrase: 'asap', replacement: 'as soon as possible', category: 'Business' }
-        ];
-        
-        defaults.forEach(phrase => {
-            this.phrases.set(phrase.phrase.toLowerCase(), phrase);
-        });
-        
+    private savePhrases() {
+        try {
+            const phrasesArray: Phrase[] = Array.from(this.phrases.entries()).map(([trigger, phrase]) => ({
+                trigger,
+                phrase
+            }));
+            fs.writeFileSync(this.phrasesFilePath, JSON.stringify(phrasesArray, null, 2));
+        } catch (error) {
+            console.error('Error saving phrases:', error);
+            vscode.window.showErrorMessage('Failed to save phrases');
+        }
+    }
+
+    getAllPhrases(): Phrase[] {
+        return Array.from(this.phrases.entries()).map(([trigger, phrase]) => ({
+            trigger,
+            phrase
+        }));
+    }
+
+    getPhrase(trigger: string): string | undefined {
+        return this.phrases.get(trigger);
+    }
+
+    addPhrase(trigger: string, phrase: string): boolean {
+        if (this.phrases.has(trigger)) {
+            return false;
+        }
+        this.phrases.set(trigger, phrase);
         this.savePhrases();
-    }
-
-    private validatePhrase(phrase: SmartPhrase): boolean {
-        return phrase.phrase.length > 0 && 
-               phrase.phrase.length <= 50 && 
-               phrase.replacement.length > 0 && 
-               phrase.replacement.length <= 500 &&
-               /^[a-zA-Z0-9_\-]+$/.test(phrase.phrase);
-    }
-
-    private async savePhrases(): Promise<void> {
-        const phrasesArray = Array.from(this.phrases.values());
-        
-        if (this.storageFilePath) {
-            try {
-                const data = JSON.stringify(phrasesArray, null, 2);
-                fs.writeFileSync(this.storageFilePath, data, 'utf8');
-            } catch (error) {
-                console.error('Error saving phrases to file:', error);
-                // Fallback to global state
-                await this.context.globalState.update(PhraseStorage.storageKey, phrasesArray);
-            }
-        } else {
-            // Fallback to global state
-            await this.context.globalState.update(PhraseStorage.storageKey, phrasesArray);
-        }
-    }
-
-    getAllPhrases(): SmartPhrase[] {
-        return Array.from(this.phrases.values()).sort((a, b) => 
-            a.phrase.localeCompare(b.phrase)
-        );
-    }
-
-    getPhrase(key: string): SmartPhrase | undefined {
-        return this.phrases.get(key.toLowerCase());
-    }
-
-    async addPhrase(phrase: SmartPhrase): Promise<boolean> {
-        if (!this.validatePhrase(phrase)) {
-            return false;
-        }
-        
-        this.phrases.set(phrase.phrase.toLowerCase(), phrase);
-        await this.savePhrases();
         return true;
     }
 
-    async updatePhrase(oldKey: string, newPhrase: SmartPhrase): Promise<boolean> {
-        if (!this.validatePhrase(newPhrase)) {
+    updatePhrase(oldTrigger: string, newTrigger: string, phrase: string): boolean {
+        if (oldTrigger !== newTrigger && this.phrases.has(newTrigger)) {
             return false;
         }
-        
-        this.phrases.delete(oldKey.toLowerCase());
-        this.phrases.set(newPhrase.phrase.toLowerCase(), newPhrase);
-        await this.savePhrases();
+        this.phrases.delete(oldTrigger);
+        this.phrases.set(newTrigger, phrase);
+        this.savePhrases();
         return true;
     }
 
-    async deletePhrase(key: string): Promise<boolean> {
-        const deleted = this.phrases.delete(key.toLowerCase());
+    deletePhrase(trigger: string): boolean {
+        const deleted = this.phrases.delete(trigger);
         if (deleted) {
-            await this.savePhrases();
+            this.savePhrases();
         }
         return deleted;
     }
 
-    async exportPhrases(): Promise<string> {
-        const phrases = this.getAllPhrases();
-        return JSON.stringify(phrases, null, 2);
+    getPhrasesFilePath(): string {
+        return this.phrasesFilePath;
     }
 
-    async importPhrases(jsonData: string): Promise<number> {
-        try {
-            const imported = JSON.parse(jsonData) as SmartPhrase[];
-            let count = 0;
-            
-            for (const phrase of imported) {
-                if (this.validatePhrase(phrase)) {
-                    this.phrases.set(phrase.phrase.toLowerCase(), phrase);
-                    count++;
-                }
-            }
-            
-            if (count > 0) {
-                await this.savePhrases();
-            }
-            
-            return count;
-        } catch {
-            return 0;
+    dispose() {
+        if (this.watcher) {
+            this.watcher.dispose();
         }
     }
 }
