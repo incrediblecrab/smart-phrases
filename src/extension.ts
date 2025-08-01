@@ -47,27 +47,28 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            const shouldTrigger = 
-                (args.text === ' ' && triggerOnSpace) ||
-                (args.text === '\t' && triggerOnTab) ||
-                (args.text === '\n' && triggerOnEnter);
+            const position = editor.selection.active;
+            const linePrefix = editor.document.lineAt(position).text.substr(0, position.character);
+            const wordMatch = linePrefix.match(/(\S+)$/);
 
-            if (shouldTrigger) {
-                const position = editor.selection.active;
-                const linePrefix = editor.document.lineAt(position).text.substr(0, position.character);
-                const wordMatch = linePrefix.match(/(\S+)$/);
+            if (wordMatch) {
+                const trigger = wordMatch[1];
+                const phraseData = phraseStorage.getPhrase(trigger);
 
-                if (wordMatch) {
-                    const trigger = wordMatch[1];
-                    const phrase = phraseStorage.getPhrase(trigger);
+                if (phraseData) {
+                    // Check phrase-specific settings first, then fall back to global settings
+                    const shouldTrigger = 
+                        (args.text === ' ' && (phraseData.triggerOnSpace !== undefined ? phraseData.triggerOnSpace : triggerOnSpace)) ||
+                        (args.text === '\t' && (phraseData.triggerOnTab !== undefined ? phraseData.triggerOnTab : triggerOnTab)) ||
+                        (args.text === '\n' && (phraseData.triggerOnEnter !== undefined ? phraseData.triggerOnEnter : triggerOnEnter));
 
-                    if (phrase) {
+                    if (shouldTrigger) {
                         const edit = new vscode.WorkspaceEdit();
                         const range = new vscode.Range(
                             position.translate(0, -trigger.length),
                             position
                         );
-                        edit.replace(editor.document.uri, range, phrase);
+                        edit.replace(editor.document.uri, range, phraseData.phrase);
                         await vscode.workspace.applyEdit(edit);
                         
                         if (args.text === ' ') {

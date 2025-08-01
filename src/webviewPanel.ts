@@ -51,10 +51,10 @@ export class PhraseManagerPanel {
             message => {
                 switch (message.command) {
                     case 'addPhrase':
-                        this.handleAddPhrase(message.trigger, message.phrase);
+                        this.handleAddPhrase(message.trigger, message.phrase, message.triggerOnSpace, message.triggerOnTab, message.triggerOnEnter);
                         return;
                     case 'updatePhrase':
-                        this.handleUpdatePhrase(message.oldTrigger, message.newTrigger, message.phrase);
+                        this.handleUpdatePhrase(message.oldTrigger, message.newTrigger, message.phrase, message.triggerOnSpace, message.triggerOnTab, message.triggerOnEnter);
                         return;
                     case 'deletePhrase':
                         this.handleDeletePhrase(message.trigger);
@@ -72,13 +72,13 @@ export class PhraseManagerPanel {
         );
     }
 
-    private handleAddPhrase(trigger: string, phrase: string) {
+    private handleAddPhrase(trigger: string, phrase: string, triggerOnSpace?: boolean, triggerOnTab?: boolean, triggerOnEnter?: boolean) {
         if (!trigger || !phrase) {
             vscode.window.showErrorMessage('Trigger and phrase cannot be empty');
             return;
         }
 
-        if (this.phraseStorage.addPhrase(trigger, phrase)) {
+        if (this.phraseStorage.addPhrase(trigger, phrase, triggerOnSpace, triggerOnTab, triggerOnEnter)) {
             vscode.window.showInformationMessage(`Added phrase: ${trigger} -> ${phrase}`);
             this._update();
         } else {
@@ -86,13 +86,13 @@ export class PhraseManagerPanel {
         }
     }
 
-    private handleUpdatePhrase(oldTrigger: string, newTrigger: string, phrase: string) {
+    private handleUpdatePhrase(oldTrigger: string, newTrigger: string, phrase: string, triggerOnSpace?: boolean, triggerOnTab?: boolean, triggerOnEnter?: boolean) {
         if (!newTrigger || !phrase) {
             vscode.window.showErrorMessage('Trigger and phrase cannot be empty');
             return;
         }
 
-        if (this.phraseStorage.updatePhrase(oldTrigger, newTrigger, phrase)) {
+        if (this.phraseStorage.updatePhrase(oldTrigger, newTrigger, phrase, triggerOnSpace, triggerOnTab, triggerOnEnter)) {
             vscode.window.showInformationMessage(`Updated phrase: ${newTrigger} -> ${phrase}`);
             this._update();
         } else {
@@ -194,6 +194,23 @@ export class PhraseManagerPanel {
                             <label for="newPhrase">Phrase</label>
                             <textarea id="newPhrase" rows="3" placeholder="e.g., 123 Main Street, City, State 12345"></textarea>
                         </div>
+                        <div class="form-group">
+                            <label>Trigger On</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="newTriggerOnSpace" checked />
+                                    <span>Space</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="newTriggerOnTab" checked />
+                                    <span>Tab</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="newTriggerOnEnter" />
+                                    <span>Enter</span>
+                                </label>
+                            </div>
+                        </div>
                         <div class="form-actions">
                             <button class="button button-primary" id="saveNewBtn">Save</button>
                             <button class="button button-secondary" id="cancelNewBtn">Cancel</button>
@@ -207,7 +224,14 @@ export class PhraseManagerPanel {
                                 <div class="phrase-item" data-trigger="${this.escapeAttribute(p.trigger)}">
                                     <div class="phrase-content">
                                         <div class="phrase-main">
-                                            <div class="trigger-badge">${this.escapeHtml(p.trigger)}</div>
+                                            <div class="trigger-section">
+                                                <div class="trigger-badge">${this.escapeHtml(p.trigger)}</div>
+                                                <div class="trigger-options">
+                                                    ${p.triggerOnSpace !== false ? '<span class="trigger-type">Space</span>' : ''}
+                                                    ${p.triggerOnTab !== false ? '<span class="trigger-type">Tab</span>' : ''}
+                                                    ${p.triggerOnEnter === true ? '<span class="trigger-type">Enter</span>' : ''}
+                                                </div>
+                                            </div>
                                             <div class="phrase-text">${this.escapeHtml(p.phrase)}</div>
                                         </div>
                                         <div class="phrase-actions">
@@ -231,6 +255,23 @@ export class PhraseManagerPanel {
                                         <div class="form-group">
                                             <label>Phrase</label>
                                             <textarea class="edit-phrase" rows="3">${this.escapeHtml(p.phrase)}</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Trigger On</label>
+                                            <div class="checkbox-group">
+                                                <label class="checkbox-label">
+                                                    <input type="checkbox" class="edit-trigger-space" ${p.triggerOnSpace !== false ? 'checked' : ''} />
+                                                    <span>Space</span>
+                                                </label>
+                                                <label class="checkbox-label">
+                                                    <input type="checkbox" class="edit-trigger-tab" ${p.triggerOnTab !== false ? 'checked' : ''} />
+                                                    <span>Tab</span>
+                                                </label>
+                                                <label class="checkbox-label">
+                                                    <input type="checkbox" class="edit-trigger-enter" ${p.triggerOnEnter === true ? 'checked' : ''} />
+                                                    <span>Enter</span>
+                                                </label>
+                                            </div>
                                         </div>
                                         <div class="form-actions">
                                             <button class="button button-primary save-edit-btn">Save</button>

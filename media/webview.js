@@ -9,6 +9,9 @@
     const cancelNewBtn = document.getElementById('cancelNewBtn');
     const newTriggerInput = document.getElementById('newTrigger');
     const newPhraseInput = document.getElementById('newPhrase');
+    const newTriggerOnSpace = document.getElementById('newTriggerOnSpace');
+    const newTriggerOnTab = document.getElementById('newTriggerOnTab');
+    const newTriggerOnEnter = document.getElementById('newTriggerOnEnter');
 
     addPhraseBtn.addEventListener('click', () => {
         addPhraseForm.style.display = 'block';
@@ -31,11 +34,17 @@
             vscode.postMessage({
                 command: 'addPhrase',
                 trigger: trigger,
-                phrase: phrase
+                phrase: phrase,
+                triggerOnSpace: newTriggerOnSpace.checked,
+                triggerOnTab: newTriggerOnTab.checked,
+                triggerOnEnter: newTriggerOnEnter.checked
             });
 
             newTriggerInput.value = '';
             newPhraseInput.value = '';
+            newTriggerOnSpace.checked = true;
+            newTriggerOnTab.checked = true;
+            newTriggerOnEnter.checked = false;
             addPhraseForm.style.display = 'none';
         }
     });
@@ -83,13 +92,19 @@
             const oldTrigger = phraseItem.dataset.trigger;
             const newTrigger = phraseItem.querySelector('.edit-trigger').value.trim();
             const phrase = phraseItem.querySelector('.edit-phrase').value.trim();
+            const triggerOnSpace = phraseItem.querySelector('.edit-trigger-space').checked;
+            const triggerOnTab = phraseItem.querySelector('.edit-trigger-tab').checked;
+            const triggerOnEnter = phraseItem.querySelector('.edit-trigger-enter').checked;
 
             if (newTrigger && phrase) {
                 vscode.postMessage({
                     command: 'updatePhrase',
                     oldTrigger: oldTrigger,
                     newTrigger: newTrigger,
-                    phrase: phrase
+                    phrase: phrase,
+                    triggerOnSpace: triggerOnSpace,
+                    triggerOnTab: triggerOnTab,
+                    triggerOnEnter: triggerOnEnter
                 });
             }
             return;

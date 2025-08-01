@@ -5,10 +5,13 @@ import * as path from 'path';
 export interface Phrase {
     trigger: string;
     phrase: string;
+    triggerOnSpace?: boolean;
+    triggerOnTab?: boolean;
+    triggerOnEnter?: boolean;
 }
 
 export class PhraseStorage {
-    private phrases: Map<string, string> = new Map();
+    private phrases: Map<string, Phrase> = new Map();
     private phrasesFilePath: string;
     private watcher: vscode.FileSystemWatcher | undefined;
 
@@ -45,7 +48,14 @@ export class PhraseStorage {
                 const phrasesArray: Phrase[] = JSON.parse(data);
                 this.phrases.clear();
                 phrasesArray.forEach(item => {
-                    this.phrases.set(item.trigger, item.phrase);
+                    // Handle both old format (just string) and new format (with trigger settings)
+                    this.phrases.set(item.trigger, {
+                        trigger: item.trigger,
+                        phrase: item.phrase,
+                        triggerOnSpace: item.triggerOnSpace,
+                        triggerOnTab: item.triggerOnTab,
+                        triggerOnEnter: item.triggerOnEnter
+                    });
                 });
             } else {
                 this.savePhrases();
@@ -58,10 +68,7 @@ export class PhraseStorage {
 
     private savePhrases() {
         try {
-            const phrasesArray: Phrase[] = Array.from(this.phrases.entries()).map(([trigger, phrase]) => ({
-                trigger,
-                phrase
-            }));
+            const phrasesArray: Phrase[] = Array.from(this.phrases.values());
             fs.writeFileSync(this.phrasesFilePath, JSON.stringify(phrasesArray, null, 2));
         } catch (error) {
             console.error('Error saving phrases:', error);
@@ -70,31 +77,45 @@ export class PhraseStorage {
     }
 
     getAllPhrases(): Phrase[] {
-        return Array.from(this.phrases.entries()).map(([trigger, phrase]) => ({
-            trigger,
-            phrase
-        }));
+        return Array.from(this.phrases.values());
     }
 
-    getPhrase(trigger: string): string | undefined {
+    getPhrase(trigger: string): Phrase | undefined {
         return this.phrases.get(trigger);
     }
 
-    addPhrase(trigger: string, phrase: string): boolean {
+    getPhraseText(trigger: string): string | undefined {
+        const phrase = this.phrases.get(trigger);
+        return phrase ? phrase.phrase : undefined;
+    }
+
+    addPhrase(trigger: string, phrase: string, triggerOnSpace?: boolean, triggerOnTab?: boolean, triggerOnEnter?: boolean): boolean {
         if (this.phrases.has(trigger)) {
             return false;
         }
-        this.phrases.set(trigger, phrase);
+        this.phrases.set(trigger, {
+            trigger,
+            phrase,
+            triggerOnSpace,
+            triggerOnTab,
+            triggerOnEnter
+        });
         this.savePhrases();
         return true;
     }
 
-    updatePhrase(oldTrigger: string, newTrigger: string, phrase: string): boolean {
+    updatePhrase(oldTrigger: string, newTrigger: string, phrase: string, triggerOnSpace?: boolean, triggerOnTab?: boolean, triggerOnEnter?: boolean): boolean {
         if (oldTrigger !== newTrigger && this.phrases.has(newTrigger)) {
             return false;
         }
         this.phrases.delete(oldTrigger);
-        this.phrases.set(newTrigger, phrase);
+        this.phrases.set(newTrigger, {
+            trigger: newTrigger,
+            phrase,
+            triggerOnSpace,
+            triggerOnTab,
+            triggerOnEnter
+        });
         this.savePhrases();
         return true;
     }
