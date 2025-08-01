@@ -45,6 +45,10 @@
             newTriggerOnSpace.checked = true;
             newTriggerOnTab.checked = true;
             newTriggerOnEnter.checked = false;
+            // Update button states
+            document.querySelector('[data-toggle="newTriggerOnSpace"]').classList.add('active');
+            document.querySelector('[data-toggle="newTriggerOnTab"]').classList.add('active');
+            document.querySelector('[data-toggle="newTriggerOnEnter"]').classList.remove('active');
             addPhraseForm.style.display = 'none';
         }
     });
@@ -53,6 +57,16 @@
         newTriggerInput.value = '';
         newPhraseInput.value = '';
         addPhraseForm.style.display = 'none';
+    });
+
+    // Handle trigger toggle buttons
+    document.querySelectorAll('.trigger-toggle').forEach(button => {
+        button.addEventListener('click', () => {
+            const checkboxId = button.dataset.toggle;
+            const checkbox = document.getElementById(checkboxId);
+            checkbox.checked = !checkbox.checked;
+            button.classList.toggle('active', checkbox.checked);
+        });
     });
 
     // Use event delegation for dynamic content

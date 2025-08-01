@@ -49,8 +49,8 @@ Type your trigger word followed by:
 - Phrase: `console.log('Debug:', );`
 
 ### URLs
-- Trigger: `repo`
-- Phrase: `https://github.com/yourusername/`
+- Trigger: `site`
+- Phrase: `https://mlot.ai/`
 
 ## Tips
 

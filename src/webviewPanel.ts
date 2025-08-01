@@ -197,18 +197,14 @@ export class PhraseManagerPanel {
                         <div class="form-group">
                             <label>Trigger On</label>
                             <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="newTriggerOnSpace" checked />
-                                    <span>Space</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="newTriggerOnTab" checked />
-                                    <span>Tab</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="newTriggerOnEnter" />
-                                    <span>Enter</span>
-                                </label>
+                                <input type="checkbox" id="newTriggerOnSpace" checked />
+                                <button type="button" class="trigger-toggle active" data-toggle="newTriggerOnSpace">Space</button>
+                                
+                                <input type="checkbox" id="newTriggerOnTab" checked />
+                                <button type="button" class="trigger-toggle active" data-toggle="newTriggerOnTab">Tab</button>
+                                
+                                <input type="checkbox" id="newTriggerOnEnter" />
+                                <button type="button" class="trigger-toggle" data-toggle="newTriggerOnEnter">Enter</button>
                             </div>
                         </div>
                         <div class="form-actions">

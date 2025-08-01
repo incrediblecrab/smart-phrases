@@ -1,16 +1,31 @@
 # Smart Phrases
 
-Auto-complete smart phrases with trigger words for efficient typing in VS Code.
+![Version](https://img.shields.io/badge/version-0.0.1-blue.svg)
+![VS Code](https://img.shields.io/badge/VS%20Code-1.74.0+-brightgreen.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-## Features
+Boost your productivity with Smart Phrases - the intelligent text expansion extension for Visual Studio Code. Transform short trigger words into full phrases, signatures, code snippets, and more with just a keystroke.
 
-- **Trigger Word Expansion**: Type a trigger word and expand it to a full phrase
-- **Multiple Trigger Options**: Choose between space, tab, or enter to trigger expansions
-- **Easy Management**: Add, edit, and delete phrases through a clean UI
-- **JSON File Editing**: Direct access to edit the phrases JSON file
-- **Auto-completion Suggestions**: See available phrases as you type
+## ✨ Features
 
-## Usage
+- **⚡ Instant Text Expansion**: Type a trigger word and expand it to a full phrase
+- **🎯 Flexible Triggers**: Choose between space, tab, or enter to trigger expansions
+- **🎨 Intuitive Management UI**: Add, edit, and delete phrases through a clean, VS Code-native interface
+- **📝 Direct JSON Editing**: Advanced users can directly edit the phrases JSON file
+- **💡 IntelliSense Integration**: See available phrases as you type with auto-completion suggestions
+- **🔒 Secure Storage**: All phrases stored securely in VS Code's global storage
+- **🚀 Zero Configuration**: Works out of the box with sensible defaults
+
+## 🚀 Getting Started
+
+### Installation
+
+1. Open VS Code
+2. Press `Cmd+P` (macOS) or `Ctrl+P` (Windows/Linux)
+3. Type `ext install maxs-lab-of-things.smart-phrases`
+4. Press Enter to install
+
+## 📖 Usage
 
 ### Adding Phrases
 
@@ -42,7 +57,7 @@ Configure trigger keys in VS Code settings:
 - `smartPhrases.triggerOnTab`: Trigger expansion with tab (default: `true`)
 - `smartPhrases.triggerOnEnter`: Trigger expansion with enter (default: `false`)
 
-## Examples
+## 💡 Examples
 
 Common use cases for smart phrases:
 
@@ -52,19 +67,54 @@ Common use cases for smart phrases:
 - **URLs**: `gh` -> `https://github.com/`
 - **Phone Numbers**: `ph` -> `+1 (555) 123-4567`
 
-## Storage
+## 📁 Storage
 
-Phrases are stored in a JSON file in your VS Code global storage directory. You can access this file directly through the "Edit JSON" button in the phrase manager.
+Phrases are stored securely in a JSON file within VS Code's global storage directory. You can access this file directly through the "Edit JSON" button in the phrase manager.
 
-## Requirements
+### Storage Location
+- **macOS**: `~/Library/Application Support/Code/User/globalStorage/maxs-lab-of-things.smart-phrases/`
+- **Windows**: `%APPDATA%\Code\User\globalStorage\maxs-lab-of-things.smart-phrases\`
+- **Linux**: `~/.config/Code/User/globalStorage/maxs-lab-of-things.smart-phrases/`
 
-- VS Code 1.74.0 or higher
+## 📋 Requirements
 
-## License
+- Visual Studio Code 1.74.0 or higher
+- No additional dependencies required
+
+## 🔧 Troubleshooting
+
+### Phrases not expanding?
+1. Check that the trigger key is enabled in settings
+2. Ensure there are no trailing spaces in your trigger word
+3. Verify the phrase exists in the manager
+
+### Can't see IntelliSense suggestions?
+- Make sure you have at least 2 characters typed
+- Check that VS Code's IntelliSense is enabled
+
+## 🤝 Contributing
+
+This is a private extension. For feature requests or bug reports, please contact the author.
+
+## 🔐 Privacy
+
+Smart Phrases respects your privacy:
+- All data is stored locally on your machine
+- No telemetry or usage data is collected
+- No network requests are made
+
+## 📄 License
 
 MIT License - see LICENSE file for details
 
-## Author
+## 👨‍💻 Author
 
-Max Marquardt  
-[https://mlot.ai](https://mlot.ai)
+**Max Marquardt**  
+🌐 [https://mlot.ai](https://mlot.ai)  
+📧 Contact: Available at mlot.ai
+
+---
+
+**Publisher**: Max's Lab of Things (`maxs-lab-of-things`)  
+**Version**: 0.0.1  
+**Last Updated**: 2025

@@ -38,6 +38,7 @@ body {
 
 header {
     margin-bottom: 24px;
+    padding-left: 16px;
 }
 
 h1 {
@@ -57,23 +58,26 @@ h1 {
     display: flex;
     gap: 8px;
     margin-bottom: 20px;
+    padding-left: 16px;
 }
 
 .button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     padding: 6px 14px;
-    border: none;
+    border: 1px solid var(--input-border);
     border-radius: 2px;
     font-size: 13px;
     cursor: pointer;
-    transition: background-color 0.1s;
+    transition: all 0.1s;
 }
 
 .button-primary {
     background-color: var(--button-background);
     color: var(--button-foreground);
+    border-color: var(--input-border);
 }
 
 .button-primary:hover {
@@ -83,6 +87,7 @@ h1 {
 .button-secondary {
     background-color: var(--button-secondary-background);
     color: var(--button-secondary-foreground);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .button-secondary:hover {
@@ -137,6 +142,10 @@ h1 {
     gap: 8px;
     justify-content: flex-end;
     margin-top: 12px;
+}
+
+.form-actions .button {
+    min-width: 100px;
 }
 
 /* Phrases List */
@@ -247,25 +256,38 @@ h1 {
 /* Checkboxes */
 .checkbox-group {
     display: flex;
-    gap: 16px;
-    margin-top: 4px;
+    gap: 8px;
+    margin-top: 8px;
 }
 
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
+.trigger-toggle {
+    flex: 1;
+    padding: 8px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: var(--input-background);
+    color: var(--input-foreground);
+    border-radius: 4px;
     font-size: 13px;
-}
-
-.checkbox-label input[type="checkbox"] {
-    margin: 0;
     cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    font-family: inherit;
 }
 
-.checkbox-label span {
-    user-select: none;
+.trigger-toggle:hover {
+    background-color: var(--list-hover-background);
+    border-color: var(--focus-border);
+}
+
+.trigger-toggle.active {
+    background-color: var(--button-background);
+    color: var(--button-foreground);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Hidden checkboxes for form functionality */
+.checkbox-group input[type="checkbox"] {
+    display: none;
 }
 
 /* Edit Form */

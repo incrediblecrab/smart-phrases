@@ -1,0 +1,16 @@
+{
+  "publisher": "maxs-lab-of-things",
+  "packagePath": "./",
+  "baseContentUrl": "https://mlot.ai",
+  "baseImagesUrl": "https://mlot.ai",
+  "useYarn": false,
+  "dependencies": false,
+  "skipDuplicate": true,
+  "ignoreFile": ".vscodeignore",
+  "publisherDisplayName": "Max's Lab of Things",
+  "categories": ["Other", "Snippets"],
+  "galleryBanner": {
+    "color": "#2b2b2b",
+    "theme": "dark"
+  }
+}
