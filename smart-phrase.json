@@ -18,5 +18,9 @@
   {
     "trigger": "gh",
     "phrase": "https://github.com/"
+  },
+  {
+    "trigger": "impl",
+    "phrase": "implementation plan before execution"
   }
 ]
