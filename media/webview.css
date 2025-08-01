@@ -118,7 +118,7 @@ h1 {
 .form-group textarea {
     width: 100%;
     padding: 6px 8px;
-    background-color: var(--input-background);
+    background-color: white;
     color: var(--input-foreground);
     border: 1px solid var(--input-border);
     font-family: inherit;
