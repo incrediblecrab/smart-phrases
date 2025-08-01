@@ -47,8 +47,11 @@
     });
 
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('edit-btn')) {
-            const phraseItem = e.target.closest('.phrase-item');
+        const editBtn = e.target.closest('.edit-btn');
+        const deleteBtn = e.target.closest('.delete-btn');
+        
+        if (editBtn) {
+            const phraseItem = editBtn.closest('.phrase-item');
             const editForm = phraseItem.querySelector('.edit-form');
             const phraseContent = phraseItem.querySelector('.phrase-content');
             
@@ -57,8 +60,8 @@
             editForm.querySelector('.edit-trigger').focus();
         }
 
-        if (e.target.classList.contains('delete-btn')) {
-            const phraseItem = e.target.closest('.phrase-item');
+        if (deleteBtn) {
+            const phraseItem = deleteBtn.closest('.phrase-item');
             const trigger = phraseItem.dataset.trigger;
 
             if (confirm(`Delete phrase "${trigger}"?`)) {

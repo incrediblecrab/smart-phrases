@@ -24,9 +24,9 @@ Auto-complete smart phrases with trigger words for efficient typing in VS Code.
 ### Using Phrases
 
 Simply type your trigger word followed by your configured trigger key:
-- **Space**: Type `addr ` → `123 Main Street, City, State 12345 `
-- **Tab**: Type `addr[Tab]` → `123 Main Street, City, State 12345`
-- **Enter**: Type `addr[Enter]` → `123 Main Street, City, State 12345`
+- **Space**: Type `addr ` -> `123 Main Street, City, State 12345 `
+- **Tab**: Type `addr[Tab]` -> `123 Main Street, City, State 12345`
+- **Enter**: Type `addr[Enter]` -> `123 Main Street, City, State 12345`
 
 ### Managing Phrases
 
@@ -46,11 +46,11 @@ Configure trigger keys in VS Code settings:
 
 Common use cases for smart phrases:
 
-- **Addresses**: `addr` → `123 Main Street, City, State 12345`
-- **Email Signatures**: `sig` → `Best regards,\nJohn Doe\njohn@example.com`
-- **Code Snippets**: `lorem` → `Lorem ipsum dolor sit amet...`
-- **URLs**: `gh` → `https://github.com/`
-- **Phone Numbers**: `ph` → `+1 (555) 123-4567`
+- **Addresses**: `addr` -> `123 Main Street, City, State 12345`
+- **Email Signatures**: `sig` -> `Best regards,\nJohn Doe\njohn@example.com`
+- **Code Snippets**: `lorem` -> `Lorem ipsum dolor sit amet...`
+- **URLs**: `gh` -> `https://github.com/`
+- **Phone Numbers**: `ph` -> `+1 (555) 123-4567`
 
 ## Storage
 

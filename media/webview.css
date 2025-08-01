@@ -91,6 +91,9 @@ h1 {
 
 .icon {
     font-size: 16px;
+    font-weight: normal;
+    display: inline-block;
+    margin-right: 4px;
 }
 
 .add-phrase-form {
@@ -204,9 +207,11 @@ h1 {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 18px;
-    opacity: 0.7;
+    opacity: 0.6;
     transition: opacity 0.2s;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--foreground);
 }
 
 .icon-button:hover {

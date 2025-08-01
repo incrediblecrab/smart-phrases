@@ -79,7 +79,7 @@ export class PhraseManagerPanel {
         }
 
         if (this.phraseStorage.addPhrase(trigger, phrase)) {
-            vscode.window.showInformationMessage(`Added phrase: ${trigger} → ${phrase}`);
+            vscode.window.showInformationMessage(`Added phrase: ${trigger} -> ${phrase}`);
             this._update();
         } else {
             vscode.window.showErrorMessage(`Trigger "${trigger}" already exists`);
@@ -93,7 +93,7 @@ export class PhraseManagerPanel {
         }
 
         if (this.phraseStorage.updatePhrase(oldTrigger, newTrigger, phrase)) {
-            vscode.window.showInformationMessage(`Updated phrase: ${newTrigger} → ${phrase}`);
+            vscode.window.showInformationMessage(`Updated phrase: ${newTrigger} -> ${phrase}`);
             this._update();
         } else {
             vscode.window.showErrorMessage(`Trigger "${newTrigger}" already exists`);
@@ -155,7 +155,7 @@ export class PhraseManagerPanel {
                             <span class="icon">+</span> Add Phrase
                         </button>
                         <button class="button button-secondary" id="openJsonBtn">
-                            <span class="icon">📄</span> Edit JSON
+                            <span class="icon">{}</span> Edit JSON
                         </button>
                         <button class="button button-secondary" id="refreshBtn">
                             <span class="icon">↻</span> Refresh
@@ -188,8 +188,8 @@ export class PhraseManagerPanel {
                                         <div class="phrase-text">${p.phrase}</div>
                                     </div>
                                     <div class="phrase-actions">
-                                        <button class="icon-button edit-btn" title="Edit">✏️</button>
-                                        <button class="icon-button delete-btn" title="Delete">🗑️</button>
+                                        <button class="icon-button edit-btn" title="Edit">✎</button>
+                                        <button class="icon-button delete-btn" title="Delete">✕</button>
                                     </div>
                                     <div class="edit-form" style="display: none;">
                                         <div class="form-group">
