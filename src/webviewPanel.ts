@@ -100,10 +100,20 @@ export class PhraseManagerPanel {
         }
     }
 
-    private handleDeletePhrase(trigger: string) {
-        if (this.phraseStorage.deletePhrase(trigger)) {
-            vscode.window.showInformationMessage(`Deleted phrase: ${trigger}`);
-            this._update();
+    private async handleDeletePhrase(trigger: string) {
+        const answer = await vscode.window.showWarningMessage(
+            `Delete phrase "${trigger}"?`,
+            'Delete',
+            'Cancel'
+        );
+
+        if (answer === 'Delete') {
+            if (this.phraseStorage.deletePhrase(trigger)) {
+                vscode.window.showInformationMessage(`Deleted phrase: ${trigger}`);
+                this._update();
+            } else {
+                vscode.window.showErrorMessage(`Failed to delete phrase: ${trigger}`);
+            }
         }
     }
 
@@ -126,6 +136,18 @@ export class PhraseManagerPanel {
         const webview = this._panel.webview;
         this._panel.title = 'Smart Phrases Manager';
         this._panel.webview.html = this._getHtmlForWebview(webview);
+    }
+
+    private escapeAttribute(str: string): string {
+        return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    private escapeHtml(str: string): string {
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&#39;');
     }
 
     private _getHtmlForWebview(webview: vscode.Webview) {
@@ -182,20 +204,20 @@ export class PhraseManagerPanel {
                         ${phrases.length === 0 
                             ? '<div class="empty-state">No phrases yet. Click "Add Phrase" to get started!</div>'
                             : phrases.map(p => `
-                                <div class="phrase-item" data-trigger="${p.trigger}">
+                                <div class="phrase-item" data-trigger="${this.escapeAttribute(p.trigger)}">
                                     <div class="phrase-content">
                                         <div class="phrase-main">
-                                            <div class="trigger-badge">${p.trigger}</div>
-                                            <div class="phrase-text">${p.phrase}</div>
+                                            <div class="trigger-badge">${this.escapeHtml(p.trigger)}</div>
+                                            <div class="phrase-text">${this.escapeHtml(p.phrase)}</div>
                                         </div>
                                         <div class="phrase-actions">
-                                            <button class="icon-button edit-btn" title="Edit">
-                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                            <button class="icon-button edit-btn" type="button" title="Edit">
+                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="pointer-events: none;">
                                                     <path d="M13.23 1h-1.46L3.52 9.25l-.16.22L1 13.59 2.41 15l4.12-2.36.22-.16L15 4.23V2.77L13.23 1zM2.41 13.59l1.51-1.51.73.73-1.51 1.51-.73-.73zm3.61-2.36L4.47 9.64 12 2.11l1.59 1.59L6.02 11.23z"/>
                                                 </svg>
                                             </button>
-                                            <button class="icon-button delete-btn" title="Delete">
-                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                            <button class="icon-button delete-btn" type="button" title="Delete">
+                                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="pointer-events: none;">
                                                     <path fill-rule="evenodd" d="M6.5 1.75a.25.25 0 01.25-.25h2.5a.25.25 0 01.25.25V3h-3V1.75zm4.5 0V3h2.25a.75.75 0 010 1.5H2.75a.75.75 0 010-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75zM4.496 6.675a.75.75 0 10-1.492.15l.66 6.6A1.75 1.75 0 005.405 15h5.19c.9 0 1.652-.681 1.741-1.576l.66-6.6a.75.75 0 00-1.492-.149l-.66 6.6a.25.25 0 01-.249.225h-5.19a.25.25 0 01-.249-.225l-.66-6.6z"/>
                                                 </svg>
                                             </button>
@@ -204,11 +226,11 @@ export class PhraseManagerPanel {
                                     <div class="edit-form" style="display: none;">
                                         <div class="form-group">
                                             <label>Trigger</label>
-                                            <input type="text" class="edit-trigger" value="${p.trigger}" />
+                                            <input type="text" class="edit-trigger" value="${this.escapeAttribute(p.trigger)}" />
                                         </div>
                                         <div class="form-group">
                                             <label>Phrase</label>
-                                            <textarea class="edit-phrase" rows="3">${p.phrase}</textarea>
+                                            <textarea class="edit-phrase" rows="3">${this.escapeHtml(p.phrase)}</textarea>
                                         </div>
                                         <div class="form-actions">
                                             <button class="button button-primary save-edit-btn">Save</button>

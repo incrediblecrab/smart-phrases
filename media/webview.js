@@ -46,11 +46,11 @@
         addPhraseForm.style.display = 'none';
     });
 
-    document.addEventListener('click', (e) => {
-        const editBtn = e.target.closest('.edit-btn');
-        const deleteBtn = e.target.closest('.delete-btn');
-        
-        if (editBtn) {
+    // Use event delegation for dynamic content
+    document.body.addEventListener('click', (e) => {
+        // Handle edit button clicks
+        if (e.target.matches('.edit-btn') || e.target.closest('.edit-btn')) {
+            const editBtn = e.target.matches('.edit-btn') ? e.target : e.target.closest('.edit-btn');
             const phraseItem = editBtn.closest('.phrase-item');
             const editForm = phraseItem.querySelector('.edit-form');
             const phraseContent = phraseItem.querySelector('.phrase-content');
@@ -58,21 +58,27 @@
             phraseContent.style.display = 'none';
             editForm.style.display = 'block';
             editForm.querySelector('.edit-trigger').focus();
+            return;
         }
 
-        if (deleteBtn) {
+        // Handle delete button clicks
+        if (e.target.matches('.delete-btn') || e.target.closest('.delete-btn')) {
+            const deleteBtn = e.target.matches('.delete-btn') ? e.target : e.target.closest('.delete-btn');
             const phraseItem = deleteBtn.closest('.phrase-item');
             const trigger = phraseItem.dataset.trigger;
 
-            if (confirm(`Delete phrase "${trigger}"?`)) {
+            if (trigger) {
+                // Send delete command without confirm - VS Code will handle the confirmation
                 vscode.postMessage({
                     command: 'deletePhrase',
                     trigger: trigger
                 });
             }
+            return;
         }
 
-        if (e.target.classList.contains('save-edit-btn')) {
+        // Handle save edit button
+        if (e.target.matches('.save-edit-btn')) {
             const phraseItem = e.target.closest('.phrase-item');
             const oldTrigger = phraseItem.dataset.trigger;
             const newTrigger = phraseItem.querySelector('.edit-trigger').value.trim();
@@ -86,15 +92,18 @@
                     phrase: phrase
                 });
             }
+            return;
         }
 
-        if (e.target.classList.contains('cancel-edit-btn')) {
+        // Handle cancel edit button
+        if (e.target.matches('.cancel-edit-btn')) {
             const phraseItem = e.target.closest('.phrase-item');
             const editForm = phraseItem.querySelector('.edit-form');
             const phraseContent = phraseItem.querySelector('.phrase-content');
             
             phraseContent.style.display = 'flex';
             editForm.style.display = 'none';
+            return;
         }
     });
 
