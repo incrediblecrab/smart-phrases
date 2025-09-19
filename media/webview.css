@@ -124,7 +124,7 @@ h1 {
     width: 100%;
     padding: 6px 8px;
     background-color: white;
-    color: var(--input-foreground);
+    color: #000000;
     border: 1px solid var(--input-border);
     font-family: inherit;
     font-size: 13px;
@@ -294,6 +294,25 @@ h1 {
 .edit-form {
     padding: 16px;
     background-color: var(--input-background);
+}
+
+.edit-form input,
+.edit-form textarea {
+    width: 100%;
+    padding: 6px 8px;
+    background-color: white;
+    color: #000000;
+    border: 1px solid var(--input-border);
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+    margin-bottom: 8px;
+}
+
+.edit-form input:focus,
+.edit-form textarea:focus {
+    outline: none;
+    border-color: var(--focus-border);
 }
 
 /* Hover States */

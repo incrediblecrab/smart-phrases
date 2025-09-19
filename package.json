@@ -2,7 +2,7 @@
   "name": "smart-phrases",
   "displayName": "Smart Phrases",
   "description": "Auto-complete smart phrases with trigger words for efficient typing",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "publisher": "maxs-lab-of-things",
   "homepage": "https://mlot.ai",
   "author": {

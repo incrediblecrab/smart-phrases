@@ -1,6 +1,6 @@
 # Smart Phrases
 
-![Version](https://img.shields.io/badge/version-0.0.1-blue.svg)
+![Version](https://img.shields.io/badge/version-0.0.3-blue.svg)
 ![VS Code](https://img.shields.io/badge/VS%20Code-1.74.0+-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
@@ -116,5 +116,5 @@ MIT License - see LICENSE file for details
 ---
 
 **Publisher**: Max's Lab of Things (`maxs-lab-of-things`)  
-**Version**: 0.0.1  
+**Version**: 0.0.3  
 **Last Updated**: 2025
