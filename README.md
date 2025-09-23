@@ -1,10 +1,11 @@
 # Smart Phrases
 
-![Version](https://img.shields.io/badge/version-0.0.3-blue.svg)
-![VS Code](https://img.shields.io/badge/VS%20Code-1.74.0+-brightgreen.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Version](https://img.shields.io/visual-studio-marketplace/v/maxs-lab-of-things.smart-phrases)
+![MLoT](https://img.shields.io/badge/MLoT-ai-blue)
 
 Boost your productivity with Smart Phrases - the intelligent text expansion extension for Visual Studio Code. Transform short trigger words into full phrases, signatures, code snippets, and more with just a keystroke.
+
+![Demo](https://raw.githubusercontent.com/incrediblecrab/Packages-and-Extensions-Media/main/smart-phrases.gif)
 
 ## ✨ Features
 
@@ -107,14 +108,13 @@ Smart Phrases respects your privacy:
 
 MIT License - see LICENSE file for details
 
-## 👨‍💻 Author
+## Resources
 
-**Max Marquardt**  
-🌐 [https://mlot.ai](https://mlot.ai)  
-📧 Contact: Available at mlot.ai
+- 📺 [Watch Demo Video](https://youtu.be/jB53t0MyVI8)
+- 🌐 [Visit MLoT Page](https://mlot.ai/smart-phrases/)
+- 🔒 [Privacy Policy](https://mlot.ai/privacy)
 
----
+## Publisher
 
-**Publisher**: Max's Lab of Things (`maxs-lab-of-things`)  
-**Version**: 0.0.3  
-**Last Updated**: 2025
+**Max's Lab of Things**
+Visit [mlot.ai](https://mlot.ai/)
