@@ -71,5 +71,12 @@
     "@vscode/test-electron": "^2.2.0",
     "mocha": "^10.1.0",
     "glob": "^8.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/incrediblecrab/smart-phrases.git"
+  },
+  "bugs": {
+    "url": "https://github.com/incrediblecrab/smart-phrases/issues"
   }
 }
