@@ -5,7 +5,7 @@
 
 Boost your productivity with Smart Phrases - the intelligent text expansion extension for Visual Studio Code. Transform short trigger words into full phrases, signatures, code snippets, and more with just a keystroke.
 
-![Demo](https://raw.githubusercontent.com/incrediblecrab/Packages-and-Extensions-Media/main/smart-phrases.gif)
+![Demo](https://raw.githubusercontent.com/incrediblecrab/Packages-and-Extensions-Media/main/gifs/smart-phrases.gif)
 
 ## ✨ Features
 
