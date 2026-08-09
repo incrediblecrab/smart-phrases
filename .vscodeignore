@@ -1,7 +1,5 @@
 .vscode/**
-.vscode-test/**
 src/**
-.gitignore
 .git/**
 .yarnrc
 vsc-extension-quickstart.md
@@ -11,11 +9,41 @@ vsc-extension-quickstart.md
 **/*.ts
 !media/**
 node_modules/**
-todo.md
 .DS_Store
-**/.DS_Store
 PRODUCTION_READINESS.md
 QUICKSTART.md
 smart-phrase.json
 .vscodeignore
 package-lock.json
+
+# ===== BEGIN standardized (managed; edits here are overwritten) =====
+# AI assistant local state (contains local paths / tool permissions)
+.claude/**
+.cursor/**
+.aider*
+.copilot/**
+
+# Repo + CI metadata, not useful inside a published extension
+.github/**
+.gitignore
+.gitattributes
+.editorconfig
+
+# Dev-only docs and scratch files
+TESTING.md
+DEVELOPMENT.md
+NOTES.md
+todo.md
+TODO.md
+*.local.json
+
+# Test and build tooling
+.vscode-test/**
+.vscode-test-web/**
+coverage/**
+**/*.vsix
+
+# OS noise
+**/.DS_Store
+**/Thumbs.db
+# ===== END standardized =====
