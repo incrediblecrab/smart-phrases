@@ -7,7 +7,7 @@ Boost your productivity with Smart Phrases - the intelligent text expansion exte
 
 ![Demo](https://raw.githubusercontent.com/incrediblecrab/mlot-developer-media/main/gifs/smart-phrases.gif)
 
-## ✨ Features
+## Features
 
 - **⚡ Instant Text Expansion**: Type a trigger word and expand it to a full phrase
 - **🎯 Flexible Triggers**: Choose between space, tab, or enter to trigger expansions
@@ -17,7 +17,7 @@ Boost your productivity with Smart Phrases - the intelligent text expansion exte
 - **🔒 Secure Storage**: All phrases stored securely in VS Code's global storage
 - **🚀 Zero Configuration**: Works out of the box with sensible defaults
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Installation
 
@@ -26,7 +26,7 @@ Boost your productivity with Smart Phrases - the intelligent text expansion exte
 3. Type `ext install maxs-lab-of-things.smart-phrases`
 4. Press Enter to install
 
-## 📖 Usage
+## Usage
 
 ### Adding Phrases
 
@@ -58,7 +58,7 @@ Configure trigger keys in VS Code settings:
 - `smartPhrases.triggerOnTab`: Trigger expansion with tab (default: `true`)
 - `smartPhrases.triggerOnEnter`: Trigger expansion with enter (default: `false`)
 
-## 💡 Examples
+## Examples
 
 Common use cases for smart phrases:
 
@@ -68,7 +68,7 @@ Common use cases for smart phrases:
 - **URLs**: `gh` -> `https://github.com/`
 - **Phone Numbers**: `ph` -> `+1 (555) 123-4567`
 
-## 📁 Storage
+## Storage
 
 Phrases are stored securely in a JSON file within VS Code's global storage directory. You can access this file directly through the "Edit JSON" button in the phrase manager.
 
@@ -77,12 +77,12 @@ Phrases are stored securely in a JSON file within VS Code's global storage direc
 - **Windows**: `%APPDATA%\Code\User\globalStorage\maxs-lab-of-things.smart-phrases\`
 - **Linux**: `~/.config/Code/User/globalStorage/maxs-lab-of-things.smart-phrases/`
 
-## 📋 Requirements
+## Requirements
 
 - Visual Studio Code 1.74.0 or higher
 - No additional dependencies required
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Phrases not expanding?
 1. Check that the trigger key is enabled in settings
@@ -93,20 +93,12 @@ Phrases are stored securely in a JSON file within VS Code's global storage direc
 - Make sure you have at least 2 characters typed
 - Check that VS Code's IntelliSense is enabled
 
-## 🤝 Contributing
-
-This is a private extension. For feature requests or bug reports, please contact the author.
-
-## 🔐 Privacy
+## Privacy
 
 Smart Phrases respects your privacy:
 - All data is stored locally on your machine
 - No telemetry or usage data is collected
 - No network requests are made
-
-## 📄 License
-
-MIT License - see LICENSE file for details
 
 ## Resources
 
@@ -118,3 +110,7 @@ MIT License - see LICENSE file for details
 
 **Max's Lab of Things**
 Visit [mlot.ai](https://mlot.ai/)
+
+## License
+
+MIT
