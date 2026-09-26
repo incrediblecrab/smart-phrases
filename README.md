@@ -1,116 +1,76 @@
-# Smart Phrases
+# smart-phrases
 
-![Version](https://img.shields.io/visual-studio-marketplace/v/maxs-lab-of-things.smart-phrases)
-![MLoT](https://img.shields.io/badge/MLoT-ai-blue)
+![Version](https://img.shields.io/visual-studio-marketplace/v/maxs-lab-of-things.smart-phrases) ![MLoT](https://img.shields.io/badge/MLoT-ai-blue)
 
-Boost your productivity with Smart Phrases - the intelligent text expansion extension for Visual Studio Code. Transform short trigger words into full phrases, signatures, code snippets, and more with just a keystroke.
+Smart Phrases is a VS Code extension for expanding short trigger words into saved phrases while typing. It is published on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=maxs-lab-of-things.smart-phrases) as `maxs-lab-of-things.smart-phrases`; the published version is 1.5.1, matching this repository.
 
 ![Demo](https://raw.githubusercontent.com/incrediblecrab/mlot-developer-media/main/gifs/smart-phrases.gif)
 
-## Features
+**Objective:** make repeated text, signatures and snippets available through a local phrase manager and completion provider.
 
-- **⚡ Instant Text Expansion**: Type a trigger word and expand it to a full phrase
-- **🎯 Flexible Triggers**: Choose between space, tab, or enter to trigger expansions
-- **🎨 Intuitive Management UI**: Add, edit, and delete phrases through a clean, VS Code-native interface
-- **📝 Direct JSON Editing**: Advanced users can directly edit the phrases JSON file
-- **💡 IntelliSense Integration**: See available phrases as you type with auto-completion suggestions
-- **🔒 Secure Storage**: All phrases stored securely in VS Code's global storage
-- **🚀 Zero Configuration**: Works out of the box with sensible defaults
+**Inputs:** VS Code 1.74.0 or later. Phrases are stored locally in VS Code global storage as `smart-phrases.json` under this extension's global storage directory.
 
-## Getting Started
+**Files:**
 
-### Installation
+- [`src/`](src/): the TypeScript extension source, phrase storage, completion provider, webview panel and tests
+- [`media/`](media/): JavaScript and CSS loaded by the phrase manager webview
+- [`package.json`](package.json): extension metadata, command, settings and npm scripts
+- [`smart-phrase.json`](smart-phrase.json): sample phrase data
+- [`QUICKSTART.md`](QUICKSTART.md): quick-start documentation
+- [`PRODUCTION_READINESS.md`](PRODUCTION_READINESS.md): production-readiness notes
+- [`CHANGELOG.md`](CHANGELOG.md): release history
+- [`Group-21.png`](Group-21.png): Marketplace image asset
+- [`tsconfig.json`](tsconfig.json): TypeScript compiler settings
 
-1. Open VS Code
-2. Press `Cmd+P` (macOS) or `Ctrl+P` (Windows/Linux)
-3. Type `ext install maxs-lab-of-things.smart-phrases`
-4. Press Enter to install
+**Try it:** install the published build with `ext install maxs-lab-of-things.smart-phrases`. For local development, run `npm install`, then `npm run compile`, and launch the extension host from VS Code.
 
 ## Usage
 
-### Adding Phrases
+Run `Smart Phrases: Manage Smart Phrases` from the Command Palette to open the manager. Add a trigger, enter the phrase text and choose whether that phrase expands on space, tab or enter.
 
-1. Open Command Palette (`Cmd+Shift+P` on macOS, `Ctrl+Shift+P` on Windows/Linux)
-2. Run `Smart Phrases: Manage Smart Phrases`
-3. Click "Add Phrase" 
-4. Enter your trigger word (e.g., `addr`)
-5. Enter the full phrase (e.g., `123 Main Street, City, State 12345`)
-6. Click Save
+To use a phrase, type its trigger and press an enabled trigger key. Space and tab are enabled by default; enter is disabled by default. Phrase-specific trigger choices override the global settings when they are present.
 
-### Using Phrases
+The extension also registers a completion provider for file-backed documents. As you type a non-whitespace word, matching phrase triggers appear as snippet completions and insert the phrase text.
 
-Simply type your trigger word followed by your configured trigger key:
-- **Space**: Type `addr ` -> `123 Main Street, City, State 12345 `
-- **Tab**: Type `addr[Tab]` -> `123 Main Street, City, State 12345`
-- **Enter**: Type `addr[Enter]` -> `123 Main Street, City, State 12345`
+The phrase manager can add, edit, delete and refresh phrases. Its "Edit JSON" button opens the local storage file directly for advanced edits.
 
-### Managing Phrases
+## Commands
 
-- **Edit**: Click the edit icon next to any phrase to modify it
-- **Delete**: Click the delete icon to remove a phrase
-- **Edit JSON**: Click "Edit JSON" to directly modify the phrases file
+| Command | Title | Where it appears |
+| --- | --- | --- |
+| `smartPhrases.managePhrases` | Manage Smart Phrases | Command Palette |
 
-## Configuration
+## Settings
 
-Configure trigger keys in VS Code settings:
+| Setting | Type | Default | Description |
+| --- | --- | --- | --- |
+| `smartPhrases.triggerOnSpace` | boolean | `true` | Expand a phrase when space is typed |
+| `smartPhrases.triggerOnTab` | boolean | `true` | Expand a phrase when tab is typed |
+| `smartPhrases.triggerOnEnter` | boolean | `false` | Expand a phrase when enter is typed |
 
-- `smartPhrases.triggerOnSpace`: Trigger expansion with space (default: `true`)
-- `smartPhrases.triggerOnTab`: Trigger expansion with tab (default: `true`)
-- `smartPhrases.triggerOnEnter`: Trigger expansion with enter (default: `false`)
+## Storage and privacy
 
-## Examples
+Phrases are read from and written to a JSON file in VS Code global storage. The extension code does not make network requests or send phrase data to a service.
 
-Common use cases for smart phrases:
+Typical storage roots are `~/Library/Application Support/Code/User/globalStorage/maxs-lab-of-things.smart-phrases/` on macOS, `%APPDATA%\Code\User\globalStorage\maxs-lab-of-things.smart-phrases\` on Windows and `~/.config/Code/User/globalStorage/maxs-lab-of-things.smart-phrases/` on Linux.
 
-- **Addresses**: `addr` -> `123 Main Street, City, State 12345`
-- **Email Signatures**: `sig` -> `Best regards,\nJohn Doe\njohn@example.com`
-- **Code Snippets**: `lorem` -> `Lorem ipsum dolor sit amet...`
-- **URLs**: `gh` -> `https://github.com/`
-- **Phone Numbers**: `ph` -> `+1 (555) 123-4567`
+## Development
 
-## Storage
+- `npm run compile`: compile TypeScript with `tsc -p ./`
+- `npm run watch`: compile in watch mode
+- `npm run lint`: run ESLint on `src`
+- `npm run test`: run the VS Code extension test runner from `out/test/runTest.js`
 
-Phrases are stored securely in a JSON file within VS Code's global storage directory. You can access this file directly through the "Edit JSON" button in the phrase manager.
+Do not publish from this repository unless the package metadata and Marketplace release are intentionally being updated. This package does not define `package` or `publish` npm scripts.
 
-### Storage Location
-- **macOS**: `~/Library/Application Support/Code/User/globalStorage/maxs-lab-of-things.smart-phrases/`
-- **Windows**: `%APPDATA%\Code\User\globalStorage\maxs-lab-of-things.smart-phrases\`
-- **Linux**: `~/.config/Code/User/globalStorage/maxs-lab-of-things.smart-phrases/`
+## Links
 
-## Requirements
-
-- Visual Studio Code 1.74.0 or higher
-- No additional dependencies required
-
-## Troubleshooting
-
-### Phrases not expanding?
-1. Check that the trigger key is enabled in settings
-2. Ensure there are no trailing spaces in your trigger word
-3. Verify the phrase exists in the manager
-
-### Can't see IntelliSense suggestions?
-- Make sure you have at least 2 characters typed
-- Check that VS Code's IntelliSense is enabled
-
-## Privacy
-
-Smart Phrases respects your privacy:
-- All data is stored locally on your machine
-- No telemetry or usage data is collected
-- No network requests are made
-
-## Resources
-
-- 📺 [Watch Demo Video](https://youtu.be/jB53t0MyVI8)
-- 🌐 [Visit MLoT Page](https://mlot.ai/smart-phrases/)
-- 🔒 [Privacy Policy](https://mlot.ai/privacy)
-
-## Publisher
-
-**Max's Lab of Things**
-Visit [mlot.ai](https://mlot.ai/)
+- [Marketplace listing](https://marketplace.visualstudio.com/items?itemName=maxs-lab-of-things.smart-phrases)
+- [Demo video](https://youtu.be/jB53t0MyVI8)
+- [MLoT product page](https://mlot.ai/smart-phrases/)
+- [Privacy policy](https://mlot.ai/privacy/)
+- Publisher: [Max's Lab of Things](https://mlot.ai/)
 
 ## License
 
-MIT
+MIT. See [`LICENSE`](LICENSE).
